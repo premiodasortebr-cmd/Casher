@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { ArrowRightIcon, CheckCircleIcon, LockKeyIcon } from "@phosphor-icons/react/dist/ssr";
 import { AuthShell } from "@/components/auth/AuthShell";
@@ -22,6 +23,9 @@ export default async function SetupPage() {
   await connection();
   const configurado = envConfigurado();
   const local = podeEscreverEnvLocal();
+  // Em produção, depois de configurado, esta tela não tem função — e não pode
+  // ficar apontando o caminho do /admin pra qualquer visitante.
+  if (configurado && !local) redirect("/ligador");
   const admin = configurado ? await getSessaoAdmin() : null;
 
   const headline = (
@@ -74,11 +78,7 @@ export default async function SetupPage() {
     <AuthShell
       eyebrow="Configuração"
       title="Tudo configurado"
-      description={
-        local
-          ? "Pra alterar as chaves ou o PIN, entre como admin primeiro."
-          : "As chaves ficam nas variáveis de ambiente do Render."
-      }
+      description="Pra alterar as chaves ou o PIN, entre como admin primeiro."
       headline={headline}
       headlineDescription={headlineDescription}
     >

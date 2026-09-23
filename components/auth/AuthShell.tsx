@@ -1,4 +1,3 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
 import { BezelCard } from "@/components/ui/Card";
 import { Eyebrow } from "@/components/ui/Badge";
@@ -36,9 +35,7 @@ export function AuthShell({
 
       <div className="relative mx-auto grid min-h-[100dvh] max-w-[1200px] grid-cols-1 lg:grid-cols-[1.1fr_1fr]">
         <section className="hidden flex-col justify-between px-10 py-12 lg:flex">
-          <Link href="/" className="w-max">
-            <Logo />
-          </Link>
+          <Logo className="w-max" />
           <div className="max-w-[30rem] animate-fade-up">
             <h2 className="text-[52px] font-semibold leading-[1.02] tracking-[-0.045em] text-fg">
               {headline}
@@ -55,9 +52,7 @@ export function AuthShell({
         </section>
 
         <section className="flex flex-col px-4 py-8 sm:px-8 lg:justify-center lg:py-12">
-          <Link href="/" className="mb-10 w-max lg:hidden">
-            <Logo />
-          </Link>
+          <Logo className="mb-10 w-max lg:hidden" />
           <div className="mx-auto w-full max-w-[420px] animate-fade-up [animation-delay:80ms]">
             <BezelCard innerClassName="px-6 py-8 sm:px-8 sm:py-9">
               {eyebrow && <Eyebrow className="mb-4">{eyebrow}</Eyebrow>}
