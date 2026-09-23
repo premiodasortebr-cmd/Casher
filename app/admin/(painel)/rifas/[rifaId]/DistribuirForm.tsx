@@ -59,7 +59,11 @@ export function DistribuirForm({
           </Select>
         </Field>
 
-        <Field label="Quantidade" htmlFor="quantidade" hint={`Máximo ${formatNumero(disponiveis)}. Vai pegar as mais antigas primeiro.`}>
+        <Field
+          label="Quantidade"
+          htmlFor="quantidade"
+          hint={semEstoque ? undefined : `Máximo ${formatNumero(disponiveis)}. Vai pegar as mais antigas primeiro.`}
+        >
           <div className="flex flex-col gap-2">
             <Input
               id="quantidade"
@@ -119,7 +123,11 @@ export function DistribuirForm({
           disabled={pendente || semLigador || semEstoque || quantidade < 1}
           icon={<PaperPlaneTiltIcon weight="fill" />}
         >
-          {pendente ? "Enviando…" : `Enviar ${formatNumero(Math.min(quantidade, disponiveis))} ficha(s)`}
+          {pendente
+            ? "Enviando…"
+            : semEstoque
+              ? "Nada pra enviar"
+              : `Enviar ${formatNumero(Math.min(quantidade, disponiveis))} ficha(s)`}
         </Button>
       </form>
     </Card>

@@ -16,9 +16,16 @@ export function ehStatus(v: string): v is FichaStatus {
   return v === "pendente" || v === "deu_bom" || v === "deu_ruim";
 }
 
-/** Tira o que quebra a sintaxe do filtro `or` do PostgREST. */
-export function sanitizarBusca(q: string): string {
-  return q.replace(/[,()%\\]/g, "").trim();
+/**
+ * Prepara o termo pro `ilike` na coluna `busca` de fichas_lista. Se a pessoa
+ * digitou só número/pontuação ("213.069-68", "(11) 99350"), vira só dígitos —
+ * a coluna guarda CPF e telefone também sem pontuação.
+ */
+export function normalizarBusca(q: string): string {
+  const limpo = q.replace(/[%\\]/g, "").trim();
+  const digitos = limpo.replace(/\D/g, "");
+  const soNumero = digitos.length > 0 && limpo.replace(/[\d.\-\s()+]/g, "") === "";
+  return soNumero ? digitos : limpo;
 }
 
 /** Monta `?a=1&b=2` a partir dos filtros atuais + alterações; valor vazio remove a chave. */

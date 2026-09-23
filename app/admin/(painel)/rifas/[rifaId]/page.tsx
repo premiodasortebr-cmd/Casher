@@ -19,7 +19,7 @@ import { Pagination } from "@/components/ui/Pagination";
 import { requireAdminSession } from "@/lib/auth/guard";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { formatBRL, formatCPF, formatDataHora, formatNumero, formatRelativo } from "@/lib/format";
-import { ehStatus, montarQuery, pagina as lerPagina, sanitizarBusca, texto, type SearchParams } from "@/lib/listagem";
+import { ehStatus, montarQuery, normalizarBusca, pagina as lerPagina, texto, type SearchParams } from "@/lib/listagem";
 import type { FichaLista, RifaLigadorResumo, RifaResumo } from "@/lib/types";
 import { DistribuirForm } from "./DistribuirForm";
 import { PorLigador } from "./PorLigador";
@@ -58,8 +58,8 @@ export default async function RifaDetalhePage({
   if (status) consulta = consulta.eq("status", status);
   if (ligador === "sem") consulta = consulta.is("ligador_id", null);
   else if (ligador) consulta = consulta.eq("ligador_id", ligador);
-  const busca = sanitizarBusca(q);
-  if (busca) consulta = consulta.or(`nome.ilike.%${busca}%,cpf.ilike.%${busca}%,telefone.ilike.%${busca}%`);
+  const busca = normalizarBusca(q);
+  if (busca) consulta = consulta.ilike("busca", `%${busca}%`);
 
   const de = (pagina - 1) * POR_PAGINA;
   const [{ data: fichas, count }, { data: porLigador }, { data: ligadoresAtivos }] = await Promise.all([

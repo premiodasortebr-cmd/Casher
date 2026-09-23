@@ -73,6 +73,8 @@ export interface FichaLista {
   created_at: string;
   ligador_id: string | null;
   ligador_nome: string | null;
+  rifa_nome: string;
+  busca: string;
 }
 
 /** view rifa_ligadores_resumo */

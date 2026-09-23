@@ -11,22 +11,11 @@ import { requireLigadorSession } from "@/lib/auth/guard";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sairLigador } from "@/lib/auth/actions";
 import { formatNumero } from "@/lib/format";
-import { ehStatus, montarQuery, pagina as lerPagina, sanitizarBusca, texto, type SearchParams } from "@/lib/listagem";
-import type { FichaStatus, LigadorResumo } from "@/lib/types";
+import { ehStatus, montarQuery, normalizarBusca, pagina as lerPagina, texto, type SearchParams } from "@/lib/listagem";
+import type { FichaLista, LigadorResumo } from "@/lib/types";
 import { FichaCard } from "./FichaCard";
 
 const POR_PAGINA = 20;
-
-interface FichaComRifa {
-  id: string;
-  cpf: string;
-  nome: string;
-  telefone: string | null;
-  status: FichaStatus;
-  observacao: string | null;
-  rifa_id: string;
-  rifas: { nome: string } | null;
-}
 
 export default async function LigadorHomePage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const [sessao, sp] = await Promise.all([requireLigadorSession(), searchParams]);
@@ -39,18 +28,16 @@ export default async function LigadorHomePage({ searchParams }: { searchParams: 
   const filtros = { q, status: aba === "pendente" ? "" : aba };
 
   let consulta = supabase
-    .from("fichas")
-    .select("id, cpf, nome, telefone, status, observacao, rifa_id, rifas(nome), ligador_acesso!inner(ligador_id)", {
-      count: "exact",
-    })
-    .eq("ligador_acesso.ligador_id", sessao.ligadorId);
+    .from("fichas_lista")
+    .select("*", { count: "exact" })
+    .eq("ligador_id", sessao.ligadorId);
   if (aba !== "todas") consulta = consulta.eq("status", aba);
-  const busca = sanitizarBusca(q);
-  if (busca) consulta = consulta.or(`nome.ilike.%${busca}%,cpf.ilike.%${busca}%,telefone.ilike.%${busca}%`);
+  const busca = normalizarBusca(q);
+  if (busca) consulta = consulta.ilike("busca", `%${busca}%`);
 
   const de = (pagina - 1) * POR_PAGINA;
   const [{ data: fichas, count }, { data: resumo }] = await Promise.all([
-    consulta.order("nome").range(de, de + POR_PAGINA - 1).returns<FichaComRifa[]>(),
+    consulta.order("nome").range(de, de + POR_PAGINA - 1).returns<FichaLista[]>(),
     supabase.from("ligadores_resumo").select("*").eq("id", sessao.ligadorId).maybeSingle<LigadorResumo>(),
   ]);
 
@@ -150,7 +137,7 @@ export default async function LigadorHomePage({ searchParams }: { searchParams: 
         ) : (
           <div className="flex flex-col gap-3">
             {(fichas ?? []).map((f) => (
-              <FichaCard key={f.id} ficha={f} rifaNome={f.rifas?.nome ?? null} />
+              <FichaCard key={f.id} ficha={f} rifaNome={f.rifa_nome} />
             ))}
           </div>
         )}
