@@ -40,3 +40,50 @@ export interface Ficha {
   observacao: string | null;
   created_at: string;
 }
+
+/** view rifas_resumo */
+export interface RifaResumo extends Rifa {
+  total: number;
+  pendente: number;
+  deu_bom: number;
+  deu_ruim: number;
+  sem_ligador: number;
+  disponiveis: number;
+}
+
+/** view ligadores_resumo (nunca traz password_hash) */
+export interface LigadorResumo extends Omit<Ligador, "password_hash"> {
+  atribuidas: number;
+  pendentes: number;
+  deu_bom: number;
+  deu_ruim: number;
+  ultima_atividade: string | null;
+}
+
+/** view fichas_lista */
+export interface FichaLista {
+  id: string;
+  rifa_id: string;
+  cpf: string;
+  nome: string;
+  telefone: string | null;
+  status: FichaStatus;
+  observacao: string | null;
+  status_atualizado_em: string | null;
+  created_at: string;
+  ligador_id: string | null;
+  ligador_nome: string | null;
+}
+
+/** view rifa_ligadores_resumo */
+export interface RifaLigadorResumo {
+  rifa_id: string;
+  ligador_id: string;
+  nome: string;
+  foto_url: string | null;
+  ativo: boolean;
+  atribuidas: number;
+  pendentes: number;
+  deu_bom: number;
+  deu_ruim: number;
+}
