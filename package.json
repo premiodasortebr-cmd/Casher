@@ -1,0 +1,39 @@
+{
+  "name": "casher",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "scripts": {
+    "predev": "node scripts/migrate.mjs --if-configured",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "node scripts/migrate.mjs --if-configured && next start",
+    "migrate": "node scripts/migrate.mjs",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@next/env": "16.3.6",
+    "@phosphor-icons/react": "^2.1.10",
+    "@supabase/supabase-js": "^2.117.0",
+    "jose": "^6.2.12",
+    "motion": "^13.4.2",
+    "next": "16.3.6",
+    "pg": "^8.23.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "server-only": "^0.0.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/pg": "^8.23.1",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.6",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}

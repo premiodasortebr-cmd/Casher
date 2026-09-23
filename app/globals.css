@@ -1,0 +1,133 @@
+@import "tailwindcss";
+
+/*
+ * Casher — design tokens.
+ * Dark-only ops console: near-black canvas, graphite surfaces, one lime accent
+ * ("dinheiro") that doubles as the success color. Status colors (rose/amber)
+ * are semantic only — never decorative.
+ */
+@theme {
+  --color-canvas: #07080a;
+  --color-surface: #0c0e11;
+  --color-surface-2: #121519;
+  --color-surface-3: #191d22;
+  --color-line: rgb(255 255 255 / 0.07);
+  --color-line-strong: rgb(255 255 255 / 0.13);
+
+  --color-fg: #f3f4f5;
+  --color-fg-muted: #a3a9b2;
+  --color-fg-subtle: #6c737d;
+
+  --color-accent: #c8ee72;
+  --color-accent-strong: #d8f597;
+  --color-accent-fg: #0b1003;
+  --color-accent-soft: rgb(200 238 114 / 0.1);
+  --color-accent-line: rgb(200 238 114 / 0.28);
+
+  --color-danger: #f1787d;
+  --color-danger-soft: rgb(241 120 125 / 0.1);
+  --color-danger-line: rgb(241 120 125 / 0.28);
+
+  --color-warning: #eec26a;
+  --color-warning-soft: rgb(238 194 106 / 0.1);
+  --color-warning-line: rgb(238 194 106 / 0.28);
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --shadow-bezel: inset 0 1px 0 0 rgb(255 255 255 / 0.05), 0 1px 2px 0 rgb(0 0 0 / 0.5);
+  --shadow-float: inset 0 1px 0 0 rgb(255 255 255 / 0.06), 0 24px 48px -24px rgb(0 0 0 / 0.8);
+  --shadow-accent: 0 0 0 1px rgb(200 238 114 / 0.35), 0 10px 32px -10px rgb(200 238 114 / 0.45);
+
+  --animate-fade-up: fade-up 0.7s var(--ease-spring) both;
+  --animate-fade-in: fade-in 0.5s var(--ease-out-soft) both;
+  --animate-shimmer: shimmer 1.6s linear infinite;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+      filter: blur(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+      filter: blur(0);
+    }
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes shimmer {
+    from {
+      background-position: -200% 0;
+    }
+    to {
+      background-position: 200% 0;
+    }
+  }
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-fg);
+    font-family: var(--font-sans);
+    font-feature-settings: "ss01", "cv11";
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Grão bem sutil sobre tudo — fixo e sem eventos pra não custar repaint no scroll. */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    pointer-events: none;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  ::selection {
+    background: var(--color-accent);
+    color: var(--color-accent-fg);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-line-strong) transparent;
+  }
+
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
