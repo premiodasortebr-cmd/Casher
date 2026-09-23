@@ -7,22 +7,22 @@
  * are semantic only — never decorative.
  */
 @theme {
-  --color-canvas: #07080a;
-  --color-surface: #0c0e11;
-  --color-surface-2: #121519;
-  --color-surface-3: #191d22;
-  --color-line: rgb(255 255 255 / 0.07);
-  --color-line-strong: rgb(255 255 255 / 0.13);
+  --color-canvas: #050c0a;
+  --color-surface: #0f1714;
+  --color-surface-2: #172420;
+  --color-surface-3: #1f2c29;
+  --color-line: rgb(255 255 255 / 0.06);
+  --color-line-strong: rgb(255 255 255 / 0.12);
 
-  --color-fg: #f3f4f5;
-  --color-fg-muted: #a3a9b2;
-  --color-fg-subtle: #6c737d;
+  --color-fg: #f0f4f2;
+  --color-fg-muted: #9ca89f;
+  --color-fg-subtle: #6b7a73;
 
-  --color-accent: #c8ee72;
-  --color-accent-strong: #d8f597;
-  --color-accent-fg: #0b1003;
-  --color-accent-soft: rgb(200 238 114 / 0.1);
-  --color-accent-line: rgb(200 238 114 / 0.28);
+  --color-accent: #3fc873;
+  --color-accent-strong: #5fd989;
+  --color-accent-fg: #071411;
+  --color-accent-soft: rgb(63 200 115 / 0.1);
+  --color-accent-line: rgb(63 200 115 / 0.28);
 
   --color-danger: #f1787d;
   --color-danger-soft: rgb(241 120 125 / 0.1);
@@ -40,7 +40,7 @@
 
   --shadow-bezel: inset 0 1px 0 0 rgb(255 255 255 / 0.05), 0 1px 2px 0 rgb(0 0 0 / 0.5);
   --shadow-float: inset 0 1px 0 0 rgb(255 255 255 / 0.06), 0 24px 48px -24px rgb(0 0 0 / 0.8);
-  --shadow-accent: 0 0 0 1px rgb(200 238 114 / 0.35), 0 10px 32px -10px rgb(200 238 114 / 0.45);
+  --shadow-accent: 0 0 0 1px rgb(63 200 115 / 0.35), 0 10px 32px -10px rgb(63 200 115 / 0.45);
 
   --animate-fade-up: fade-up 0.7s var(--ease-spring) both;
   --animate-fade-in: fade-in 0.5s var(--ease-out-soft) both;
