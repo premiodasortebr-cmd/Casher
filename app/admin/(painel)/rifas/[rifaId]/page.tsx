@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import {
   ArrowLeftIcon,
   CalendarIcon,
@@ -10,7 +10,7 @@ import {
 } from "@phosphor-icons/react/dist/ssr";
 import { PageHeader, EmptyState } from "@/components/ui/Layout";
 import { ButtonLink } from "@/components/ui/Button";
-import { Card, CardHeader } from "@/components/ui/Card";
+import { Card } from "@/components/ui/Card";
 import { Stat, StatusBar, StatusLegenda } from "@/components/ui/Stats";
 import { Avatar } from "@/components/ui/Avatar";
 import { StatusBadge } from "@/components/ui/Badge";
@@ -37,6 +37,7 @@ export default async function RifaDetalhePage({
 }) {
   await requireAdminSession();
   const [{ rifaId }, sp] = await Promise.all([params, searchParams]);
+  const base = `/admin/rifas/${rifaId}`;
 
   const q = texto(sp, "q");
   const statusBruto = texto(sp, "status");
@@ -62,23 +63,31 @@ export default async function RifaDetalhePage({
   if (busca) consulta = consulta.ilike("busca", `%${busca}%`);
 
   const de = (pagina - 1) * POR_PAGINA;
-  const [{ data: fichas, count }, { data: porLigador }, { data: ligadoresAtivos }] = await Promise.all([
-    consulta.order("nome").range(de, de + POR_PAGINA - 1).returns<FichaLista[]>(),
-    supabase
-      .from("rifa_ligadores_resumo")
-      .select("*")
-      .eq("rifa_id", rifaId)
-      .order("pendentes", { ascending: false })
-      .returns<RifaLigadorResumo[]>(),
-    supabase
-      .from("ligadores")
-      .select("id, nome")
-      .eq("ativo", true)
-      .order("nome")
-      .returns<{ id: string; nome: string }[]>(),
-  ]);
+  const [{ data: fichas, count, error: erroFichas }, { data: porLigador }, { data: ligadoresAtivos }] =
+    await Promise.all([
+      consulta.order("nome").range(de, de + POR_PAGINA - 1).returns<FichaLista[]>(),
+      supabase
+        .from("rifa_ligadores_resumo")
+        .select("*")
+        .eq("rifa_id", rifaId)
+        .order("pendentes", { ascending: false })
+        .returns<RifaLigadorResumo[]>(),
+      supabase
+        .from("ligadores")
+        .select("id, nome")
+        .eq("ativo", true)
+        .order("nome")
+        .returns<{ id: string; nome: string }[]>(),
+    ]);
+
+  // offset > total: PostgREST responde 416 (ex.: recolheu as fichas estando na página 3).
+  if (erroFichas?.code === "PGRST103") redirect(montarQuery(base, filtros));
+  if (erroFichas) throw new Error(`Falha ao carregar fichas: ${erroFichas.message}`);
 
   const total = count ?? 0;
+  const ultimaPagina = Math.max(1, Math.ceil(total / POR_PAGINA));
+  if (pagina > ultimaPagina) redirect(montarQuery(base, filtros, { pagina: ultimaPagina }));
+
   const filaPorLigador = new Map((porLigador ?? []).map((l) => [l.ligador_id, l.pendentes]));
   const opcoesDistribuir = (ligadoresAtivos ?? []).map((l) => ({
     ...l,
@@ -152,12 +161,15 @@ export default async function RifaDetalhePage({
       </div>
 
       <Card>
-        <CardHeader
-          title="Fichas"
-          description={temFiltro ? `${formatNumero(total)} encontrada(s)` : `${formatNumero(total)} no total`}
-          actions={<FichasToolbar ligadores={ligadoresAtivos ?? []} />}
-          className="flex-col items-stretch gap-3 md:flex-row md:items-start"
-        />
+        <div className="flex flex-col gap-3 border-b border-line px-5 py-4 xl:flex-row xl:items-start xl:justify-between">
+          <div className="min-w-0 shrink-0">
+            <h2 className="text-[15px] font-medium tracking-tight text-fg">Fichas</h2>
+            <p className="mt-0.5 text-[13px] text-fg-subtle">
+              {temFiltro ? `${formatNumero(total)} encontrada(s)` : `${formatNumero(total)} no total`}
+            </p>
+          </div>
+          <FichasToolbar ligadores={ligadoresAtivos ?? []} />
+        </div>
 
         {(fichas ?? []).length === 0 ? (
           <EmptyState
@@ -218,7 +230,7 @@ export default async function RifaDetalhePage({
             pagina={pagina}
             porPagina={POR_PAGINA}
             total={total}
-            href={(p) => montarQuery(filtros, { pagina: p })}
+            href={(p) => montarQuery(base, filtros, { pagina: p })}
           />
         )}
       </Card>

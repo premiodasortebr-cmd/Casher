@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/ssr";
 import { Input } from "./Input";
 import { useUrlParams } from "./useUrlParams";
@@ -10,14 +10,22 @@ export function SearchInput({ placeholder = "Buscar…", className }: { placehol
   const { params, set } = useUrlParams();
   const naUrl = params.get("q") ?? "";
   const [valor, setValor] = useState(naUrl);
+  const enviado = useRef<string | null>(null);
 
+  // Só espelha a URL quando a mudança veio de fora (aba, paginação, voltar).
+  // A confirmação atrasada do nosso próprio replace não pode apagar o que foi digitado depois.
   useEffect(() => {
+    if (naUrl === enviado.current) return;
     setValor(naUrl);
   }, [naUrl]);
 
   useEffect(() => {
-    if (valor === naUrl) return;
-    const t = setTimeout(() => set({ q: valor.trim() }), 350);
+    const q = valor.trim();
+    if (q === naUrl) return;
+    const t = setTimeout(() => {
+      enviado.current = q;
+      set({ q });
+    }, 350);
     return () => clearTimeout(t);
   }, [valor, naUrl, set]);
 

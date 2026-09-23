@@ -7,7 +7,10 @@ create index if not exists ficha_status_log_created_at_idx
 create index if not exists ficha_status_log_ligador_id_idx
   on public.ficha_status_log (ligador_id);
 
-create or replace view public.rifas_resumo
+-- drop + create (não `or replace`): migrations depois desta acrescentam colunas
+-- e `create or replace view` recusa voltar pra menos colunas num replay.
+drop view if exists public.rifas_resumo;
+create view public.rifas_resumo
 with (security_invoker = true) as
 select
   r.id,
@@ -29,7 +32,8 @@ group by r.id;
 
 -- Nunca expõe password_hash. "atribuidas/pendentes/deu_*" contam a fila do
 -- ligador (fichas liberadas pra ele), independente de quem marcou.
-create or replace view public.ligadores_resumo
+drop view if exists public.ligadores_resumo;
+create view public.ligadores_resumo
 with (security_invoker = true) as
 select
   l.id,

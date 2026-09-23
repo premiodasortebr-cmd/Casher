@@ -6,13 +6,17 @@ import { useUrlParams } from "@/components/ui/useUrlParams";
 
 export function FichasToolbar({ ligadores }: { ligadores: { id: string; nome: string }[] }) {
   const { params, set } = useUrlParams();
+  // Selects não-controlados com key na URL: a escolha fica na tela enquanto o
+  // servidor responde, e remontam com o valor certo quando a URL confirma.
+  const chave = params.toString();
 
   return (
-    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+    <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center xl:w-auto">
       <SearchInput placeholder="Nome, CPF ou telefone" className="sm:w-64" />
       <Select
+        key={`status-${chave}`}
         aria-label="Status"
-        value={params.get("status") ?? ""}
+        defaultValue={params.get("status") ?? ""}
         onChange={(e) => set({ status: e.target.value })}
         className="sm:w-40"
       >
@@ -22,8 +26,9 @@ export function FichasToolbar({ ligadores }: { ligadores: { id: string; nome: st
         <option value="deu_ruim">Deu ruim</option>
       </Select>
       <Select
+        key={`ligador-${chave}`}
         aria-label="Ligador"
-        value={params.get("ligador") ?? ""}
+        defaultValue={params.get("ligador") ?? ""}
         onChange={(e) => set({ ligador: e.target.value })}
         className="sm:w-48"
       >

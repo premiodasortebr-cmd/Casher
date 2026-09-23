@@ -4,8 +4,10 @@
 -- nenhum acesso. O admin escolhe rifa + ligador + quantidade, e o banco pega as
 -- N mais antigas disponíveis numa transação só.
 
--- `disponiveis` entra no fim (create or replace view só aceita coluna nova no final).
-create or replace view public.rifas_resumo
+-- Views sempre com drop + create: assim qualquer migration pode ser reexecutada
+-- em qualquer ordem de replay sem esbarrar em "cannot drop columns from view".
+drop view if exists public.rifas_resumo;
+create view public.rifas_resumo
 with (security_invoker = true) as
 select
   r.id,
@@ -31,7 +33,8 @@ group by r.id;
 
 -- Ficha + ligador atual (o primeiro acesso, se houver): filtrar por "sem ligador"
 -- vira um `ligador_id is null`, sem N+1 nem lista gigante de ids na URL.
-create or replace view public.fichas_lista
+drop view if exists public.fichas_lista;
+create view public.fichas_lista
 with (security_invoker = true) as
 select
   f.id,
@@ -56,7 +59,8 @@ left join lateral (
 left join public.ligadores l on l.id = la.ligador_id;
 
 -- Fila de cada ligador dentro de cada rifa.
-create or replace view public.rifa_ligadores_resumo
+drop view if exists public.rifa_ligadores_resumo;
+create view public.rifa_ligadores_resumo
 with (security_invoker = true) as
 select
   f.rifa_id,

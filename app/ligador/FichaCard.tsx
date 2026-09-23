@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { CheckCircleIcon, PhoneIcon, WhatsappLogoIcon, XCircleIcon } from "@phosphor-icons/react/dist/ssr";
+import {
+  ArrowCounterClockwiseIcon,
+  CheckCircleIcon,
+  PhoneIcon,
+  WhatsappLogoIcon,
+  XCircleIcon,
+} from "@phosphor-icons/react/dist/ssr";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -88,17 +94,27 @@ export function FichaCard({ ficha, rifaNome }: { ficha: Props; rifaNome: string 
         </Alert>
       )}
 
-      <div className="mt-3 grid grid-cols-3 gap-2">
+      <div className="mt-3 grid grid-cols-2 gap-2">
         <Button size="sm" disabled={pendente} onClick={() => marcar("deu_bom")} icon={<CheckCircleIcon weight="fill" />}>
           Deu bom
         </Button>
         <Button size="sm" variant="danger" disabled={pendente} onClick={() => marcar("deu_ruim")} icon={<XCircleIcon weight="fill" />}>
           Deu ruim
         </Button>
-        <Button size="sm" variant="secondary" disabled={pendente} onClick={() => marcar("pendente")}>
-          Pendente
-        </Button>
       </div>
+      {ficha.status !== "pendente" && (
+        <Button
+          size="sm"
+          variant="ghost"
+          block
+          disabled={pendente}
+          onClick={() => marcar("pendente")}
+          icon={<ArrowCounterClockwiseIcon />}
+          className="mt-1.5"
+        >
+          Voltar pra pendente
+        </Button>
+      )}
     </Card>
   );
 }

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { SignOutIcon, TicketIcon } from "@phosphor-icons/react/dist/ssr";
 import { Logo } from "@/components/ui/Logo";
 import { Avatar } from "@/components/ui/Avatar";
@@ -15,6 +16,7 @@ import { ehStatus, montarQuery, normalizarBusca, pagina as lerPagina, texto, typ
 import type { FichaLista, LigadorResumo } from "@/lib/types";
 import { FichaCard } from "./FichaCard";
 
+const BASE = "/ligador";
 const POR_PAGINA = 20;
 
 export default async function LigadorHomePage({ searchParams }: { searchParams: Promise<SearchParams> }) {
@@ -36,12 +38,19 @@ export default async function LigadorHomePage({ searchParams }: { searchParams: 
   if (busca) consulta = consulta.ilike("busca", `%${busca}%`);
 
   const de = (pagina - 1) * POR_PAGINA;
-  const [{ data: fichas, count }, { data: resumo }] = await Promise.all([
+  const [{ data: fichas, count, error }, { data: resumo }] = await Promise.all([
     consulta.order("nome").range(de, de + POR_PAGINA - 1).returns<FichaLista[]>(),
     supabase.from("ligadores_resumo").select("*").eq("id", sessao.ligadorId).maybeSingle<LigadorResumo>(),
   ]);
 
+  // offset > total: PostgREST responde 416 (ex.: marcou todas as fichas da página 2).
+  if (error?.code === "PGRST103") redirect(montarQuery(BASE, filtros));
+  if (error) throw new Error(`Falha ao carregar fichas: ${error.message}`);
+
   const total = count ?? 0;
+  const ultimaPagina = Math.max(1, Math.ceil(total / POR_PAGINA));
+  if (pagina > ultimaPagina) redirect(montarQuery(BASE, filtros, { pagina: ultimaPagina }));
+
   const contagem = {
     pendente: resumo?.pendentes ?? 0,
     deu_bom: resumo?.deu_bom ?? 0,
@@ -58,7 +67,9 @@ export default async function LigadorHomePage({ searchParams }: { searchParams: 
     <div className="min-h-[100dvh]">
       <header className="sticky top-0 z-30 border-b border-line bg-canvas/85 px-4 py-3.5 backdrop-blur-xl sm:px-6">
         <div className="mx-auto flex max-w-2xl items-center justify-between">
-          <Logo compact />
+          <Link href={BASE} aria-label="Início">
+            <Logo compact />
+          </Link>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2.5">
               <Avatar nome={sessao.nome} size="sm" />
@@ -105,7 +116,7 @@ export default async function LigadorHomePage({ searchParams }: { searchParams: 
               return (
                 <Link
                   key={a.chave}
-                  href={montarQuery({ q, status: a.chave === "pendente" ? "" : a.chave })}
+                  href={montarQuery(BASE, { q, status: a.chave === "pendente" ? "" : a.chave })}
                   scroll={false}
                   className={`flex h-9 shrink-0 items-center gap-2 rounded-full border px-3.5 text-[13px] transition-colors duration-300 ease-spring ${
                     on ? "border-accent-line bg-accent-soft text-accent" : "border-line bg-white/[0.02] text-fg-muted hover:text-fg"
@@ -144,7 +155,7 @@ export default async function LigadorHomePage({ searchParams }: { searchParams: 
 
         {total > POR_PAGINA && (
           <Card>
-            <Pagination pagina={pagina} porPagina={POR_PAGINA} total={total} href={(p) => montarQuery(filtros, { pagina: p })} />
+            <Pagination pagina={pagina} porPagina={POR_PAGINA} total={total} href={(p) => montarQuery(BASE, filtros, { pagina: p })} />
           </Card>
         )}
       </main>

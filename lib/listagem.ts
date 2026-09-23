@@ -28,8 +28,13 @@ export function normalizarBusca(q: string): string {
   return soNumero ? digitos : limpo;
 }
 
-/** Monta `?a=1&b=2` a partir dos filtros atuais + alterações; valor vazio remove a chave. */
+/**
+ * Monta `base?a=1&b=2` a partir dos filtros atuais + alterações; valor vazio remove
+ * a chave. Sempre devolve o caminho inteiro: um `href=""` faria o Link recarregar a
+ * URL atual com a query antiga (a aba "Pendentes" ficaria morta).
+ */
 export function montarQuery(
+  base: string,
   atual: Record<string, string | undefined>,
   patch: Record<string, string | number | undefined> = {},
 ): string {
@@ -39,5 +44,5 @@ export function montarQuery(
     params.set(k, String(v));
   }
   const qs = params.toString();
-  return qs ? `?${qs}` : "";
+  return qs ? `${base}?${qs}` : base;
 }

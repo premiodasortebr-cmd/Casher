@@ -14,7 +14,7 @@ function Seta({ href, disabled, children, label }: { href: string; disabled: boo
     );
   }
   return (
-    <Link href={href} aria-label={label} className={botao} scroll={false}>
+    <Link href={href} aria-label={label} className={botao}>
       {children}
     </Link>
   );
