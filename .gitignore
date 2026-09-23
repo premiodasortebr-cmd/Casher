@@ -29,3 +29,5 @@ Thumbs.db
 
 # Misc
 .turbo/
+*.tsbuildinfo
+.claude/settings.local.json

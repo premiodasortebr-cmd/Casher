@@ -1,5 +1,7 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ArrowLeftIcon } from "@phosphor-icons/react/dist/ssr";
+import { PageHeader } from "@/components/ui/Layout";
+import { ButtonLink } from "@/components/ui/Button";
 import { requireAdminSession } from "@/lib/auth/guard";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { FichasAcesso } from "./FichasAcesso";
@@ -60,24 +62,19 @@ export default async function RifaDetalhePage({
   }));
 
   return (
-    <main className="min-h-screen bg-neutral-950 px-6 py-10 text-neutral-100">
-      <div className="mx-auto max-w-3xl">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-semibold">{rifa.nome}</h1>
-            {rifa.premio_descricao && (
-              <p className="text-sm text-neutral-400">Prêmio: {rifa.premio_descricao}</p>
-            )}
-          </div>
-          <Link href="/admin/rifas" className="text-sm text-neutral-400 hover:text-neutral-200">
-            ← voltar
-          </Link>
-        </div>
+    <div className="flex flex-col gap-8">
+      <PageHeader
+        eyebrow="Rifas"
+        title={rifa.nome}
+        description={rifa.premio_descricao ? `Prêmio: ${rifa.premio_descricao}` : undefined}
+        back={
+          <ButtonLink href="/admin/rifas" variant="ghost" size="sm" icon={<ArrowLeftIcon />}>
+            Voltar
+          </ButtonLink>
+        }
+      />
 
-        <div className="mt-6">
-          <FichasAcesso rifaId={rifaId} fichas={fichasComAcesso} ligadores={ligadores ?? []} />
-        </div>
-      </div>
-    </main>
+      <FichasAcesso rifaId={rifaId} fichas={fichasComAcesso} ligadores={ligadores ?? []} />
+    </div>
   );
 }

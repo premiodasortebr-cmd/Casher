@@ -1,3 +1,8 @@
+import { SignOutIcon, TicketIcon } from "@phosphor-icons/react/dist/ssr";
+import { Logo } from "@/components/ui/Logo";
+import { Avatar } from "@/components/ui/Avatar";
+import { EmptyState } from "@/components/ui/Layout";
+import { Card } from "@/components/ui/Card";
 import { requireLigadorSession } from "@/lib/auth/guard";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sairLigador } from "@/lib/auth/actions";
@@ -43,34 +48,55 @@ export default async function LigadorHomePage() {
   }
 
   return (
-    <main className="min-h-screen bg-neutral-950 px-6 py-10 text-neutral-100">
-      <div className="mx-auto max-w-2xl">
-        <header className="flex items-center justify-between">
-          <h1 className="text-xl font-semibold">Olá, {sessao.nome}</h1>
-          <form action={sairLigador}>
-            <button className="text-sm text-neutral-400 hover:text-neutral-200">Sair</button>
-          </form>
-        </header>
-
-        {porRifa.size === 0 && (
-          <p className="mt-8 text-neutral-400">Nenhuma ficha liberada pra você ainda.</p>
-        )}
-
-        <div className="mt-8 space-y-8">
-          {Array.from(porRifa.entries()).map(([rifaId, grupo]) => (
-            <section key={rifaId}>
-              <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-neutral-500">
-                {grupo.nome}
-              </h2>
-              <ul className="space-y-3">
-                {grupo.fichas.map((f) => (
-                  <FichaCard key={f.id} ficha={f} />
-                ))}
-              </ul>
-            </section>
-          ))}
+    <div className="min-h-[100dvh]">
+      <header className="sticky top-0 z-30 border-b border-line bg-canvas/85 px-4 py-4 backdrop-blur-xl sm:px-6">
+        <div className="mx-auto flex max-w-2xl items-center justify-between">
+          <Logo compact />
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5">
+              <Avatar nome={sessao.nome} size="sm" />
+              <span className="hidden text-[13.5px] font-medium text-fg sm:inline">{sessao.nome}</span>
+            </div>
+            <form action={sairLigador}>
+              <button
+                type="submit"
+                aria-label="Sair"
+                title="Sair"
+                className="flex size-8 items-center justify-center rounded-full text-fg-subtle transition-colors duration-300 ease-spring hover:bg-white/[0.06] hover:text-fg"
+              >
+                <SignOutIcon size={17} />
+              </button>
+            </form>
+          </div>
         </div>
-      </div>
-    </main>
+      </header>
+
+      <main className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
+        {porRifa.size === 0 ? (
+          <Card>
+            <EmptyState
+              icon={<TicketIcon />}
+              title="Nenhuma ficha liberada"
+              description="Assim que o admin conceder acesso a fichas, elas aparecem aqui."
+            />
+          </Card>
+        ) : (
+          <div className="flex flex-col gap-8">
+            {Array.from(porRifa.entries()).map(([rifaId, grupo]) => (
+              <section key={rifaId} className="flex flex-col gap-3">
+                <h2 className="px-1 text-[11px] font-medium uppercase tracking-[0.14em] text-fg-subtle">
+                  {grupo.nome}
+                </h2>
+                <div className="flex flex-col gap-3">
+                  {grupo.fichas.map((f) => (
+                    <FichaCard key={f.id} ficha={f} />
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        )}
+      </main>
+    </div>
   );
 }

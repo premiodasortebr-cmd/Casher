@@ -1,14 +1,20 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import {
+  CheckCircleIcon,
+  PhoneIcon,
+  WhatsappLogoIcon,
+  XCircleIcon,
+} from "@phosphor-icons/react/dist/ssr";
+import { Card } from "@/components/ui/Card";
+import { Input } from "@/components/ui/Input";
+import { Button, IconButton } from "@/components/ui/Button";
+import { StatusBadge } from "@/components/ui/Badge";
+import { Alert } from "@/components/ui/Layout";
+import { formatCPF, telHref, whatsappHref } from "@/lib/format";
 import { marcarStatus } from "./actions";
 import type { FichaStatus } from "@/lib/types";
-
-const STATUS_CLASSE: Record<FichaStatus, string> = {
-  pendente: "bg-neutral-800 text-neutral-300",
-  deu_bom: "bg-emerald-900/60 text-emerald-300",
-  deu_ruim: "bg-red-900/60 text-red-300",
-};
 
 interface Props {
   id: string;
@@ -31,52 +37,87 @@ export function FichaCard({ ficha }: { ficha: Props }) {
     });
   }
 
+  const wa = whatsappHref(ficha.telefone);
+  const tel = telHref(ficha.telefone);
+
   return (
-    <li className="rounded-xl border border-neutral-800 bg-neutral-900 p-4">
+    <Card className="p-4">
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="font-medium">{ficha.nome}</p>
-          <p className="text-sm text-neutral-500">
-            {ficha.cpf} {ficha.telefone && `· ${ficha.telefone}`}
+        <div className="min-w-0">
+          <p className="font-medium text-fg">{ficha.nome}</p>
+          <p className="mt-0.5 text-[12.5px] text-fg-subtle">
+            {formatCPF(ficha.cpf)} {ficha.telefone && `· ${ficha.telefone}`}
           </p>
         </div>
-        <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_CLASSE[ficha.status]}`}>
-          {ficha.status === "pendente" ? "Pendente" : ficha.status === "deu_bom" ? "Deu bom" : "Deu ruim"}
-        </span>
+        <StatusBadge status={ficha.status} className="shrink-0" />
       </div>
 
-      <input
+      {(wa || tel) && (
+        <div className="mt-3 flex gap-2">
+          {wa && (
+            <a
+              href={wa}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full border border-accent-line bg-accent-soft text-[13px] font-medium text-accent transition-colors duration-300 ease-spring hover:bg-accent/15"
+            >
+              <WhatsappLogoIcon size={16} weight="fill" />
+              WhatsApp
+            </a>
+          )}
+          {tel && (
+            <a href={tel}>
+              <IconButton aria-label="Ligar" className="border border-line-strong bg-surface-2">
+                <PhoneIcon size={16} weight="fill" />
+              </IconButton>
+            </a>
+          )}
+        </div>
+      )}
+
+      <Input
         value={observacao}
         onChange={(e) => setObservacao(e.target.value)}
         placeholder="Observação (opcional)"
-        className="mt-3 w-full rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-1.5 text-sm text-neutral-100 outline-none focus:border-emerald-500"
+        className="mt-3 h-9 text-[13.5px]"
       />
 
-      {erro && <p className="mt-2 text-sm text-red-400">{erro}</p>}
+      {erro && (
+        <Alert className="mt-2.5" icon={<XCircleIcon weight="fill" />}>
+          {erro}
+        </Alert>
+      )}
 
       <div className="mt-3 flex gap-2">
-        <button
+        <Button
+          size="sm"
           disabled={pendente}
           onClick={() => marcar("deu_bom")}
-          className="flex-1 rounded-lg bg-emerald-600 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
+          icon={<CheckCircleIcon weight="fill" />}
+          className="flex-1"
         >
           Deu bom
-        </button>
-        <button
+        </Button>
+        <Button
+          size="sm"
+          variant="danger"
           disabled={pendente}
           onClick={() => marcar("deu_ruim")}
-          className="flex-1 rounded-lg bg-red-600 py-2 text-sm font-medium text-white hover:bg-red-500 disabled:opacity-50"
+          icon={<XCircleIcon weight="fill" />}
+          className="flex-1"
         >
           Deu ruim
-        </button>
-        <button
+        </Button>
+        <Button
+          size="sm"
+          variant="secondary"
           disabled={pendente}
           onClick={() => marcar("pendente")}
-          className="flex-1 rounded-lg bg-neutral-700 py-2 text-sm font-medium text-white hover:bg-neutral-600 disabled:opacity-50"
+          className="flex-1"
         >
           Pendente
-        </button>
+        </Button>
       </div>
-    </li>
+    </Card>
   );
 }

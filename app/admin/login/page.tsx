@@ -1,6 +1,11 @@
 "use client";
 
 import { useActionState } from "react";
+import { LockKeyIcon, WarningCircleIcon } from "@phosphor-icons/react/dist/ssr";
+import { AuthShell } from "@/components/auth/AuthShell";
+import { Button } from "@/components/ui/Button";
+import { PinInput } from "@/components/ui/PinInput";
+import { Alert } from "@/components/ui/Layout";
 import { entrarComoAdmin, type EstadoLoginAdmin } from "./actions";
 
 const estadoInicial: EstadoLoginAdmin = {};
@@ -9,36 +14,37 @@ export default function AdminLoginPage() {
   const [estado, formAction, pendente] = useActionState(entrarComoAdmin, estadoInicial);
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-neutral-950 px-4">
-      <form
-        action={formAction}
-        className="w-full max-w-sm rounded-2xl border border-neutral-800 bg-neutral-900 p-8 shadow-xl"
-      >
-        <h1 className="text-xl font-semibold text-neutral-100">Painel Admin</h1>
-        <p className="mt-1 text-sm text-neutral-400">Digite o PIN de 6 dígitos.</p>
+    <AuthShell
+      eyebrow="Painel Admin"
+      title="Entrar como admin"
+      description="Digite o PIN de 6 dígitos configurado no /setup."
+      headline={
+        <>
+          Controle total.
+          <br />
+          <span className="text-fg-subtle">Segurança em cada acesso.</span>
+        </>
+      }
+      headlineDescription="Gerencie sorteios, ligadores e acompanhe cada notificação enviada aos ganhadores."
+    >
+      <form action={formAction} className="flex flex-col gap-5" key={estado.tentativa ?? 0}>
+        <div className="flex flex-col gap-2">
+          <span className="text-[13px] font-medium text-fg-muted">PIN de acesso</span>
+          <PinInput name="pin" autoFocus invalid={Boolean(estado.erro)} />
+        </div>
 
-        <input
-          type="password"
-          inputMode="numeric"
-          pattern="\d{6}"
-          maxLength={6}
-          name="pin"
-          autoFocus
-          required
-          placeholder="••••••"
-          className="mt-6 w-full rounded-lg border border-neutral-700 bg-neutral-950 px-4 py-3 text-center text-2xl tracking-[0.5em] text-neutral-100 outline-none focus:border-emerald-500"
-        />
+        {estado.erro && <Alert icon={<WarningCircleIcon weight="fill" />}>{estado.erro}</Alert>}
 
-        {estado.erro && <p className="mt-3 text-sm text-red-400">{estado.erro}</p>}
-
-        <button
+        <Button
           type="submit"
+          size="lg"
+          block
           disabled={pendente}
-          className="mt-6 w-full rounded-lg bg-emerald-600 py-3 font-medium text-white transition hover:bg-emerald-500 disabled:opacity-50"
+          icon={<LockKeyIcon weight="fill" />}
         >
-          {pendente ? "Entrando..." : "Entrar"}
-        </button>
+          {pendente ? "Entrando…" : "Entrar"}
+        </Button>
       </form>
-    </main>
+    </AuthShell>
   );
 }

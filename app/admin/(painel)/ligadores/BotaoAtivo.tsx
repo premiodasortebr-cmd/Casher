@@ -10,10 +10,10 @@ export function BotaoAtivo({ ligadorId, ativo }: { ligadorId: string; ativo: boo
     <button
       disabled={pendente}
       onClick={() => startTransition(() => alternarAtivoLigador(ligadorId, !ativo))}
-      className={`rounded-full px-3 py-1 text-xs font-medium transition disabled:opacity-50 ${
+      className={`inline-flex h-7 shrink-0 items-center rounded-full border px-3 text-xs font-medium transition-[background-color,border-color,color] duration-300 ease-spring disabled:opacity-50 ${
         ativo
-          ? "bg-emerald-900/60 text-emerald-300 hover:bg-emerald-900"
-          : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
+          ? "border-accent-line bg-accent-soft text-accent hover:bg-accent/15"
+          : "border-line-strong bg-white/[0.04] text-fg-subtle hover:bg-white/[0.07]"
       }`}
     >
       {ativo ? "Ativo" : "Inativo"}
