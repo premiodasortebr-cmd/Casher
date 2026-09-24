@@ -1,23 +1,57 @@
 /**
- * Lê o .txt exportado pelo checker (blocos "=== CPF ... ===" com uma ou mais
- * "Compra N — pedido X — Edição ..." dentro) e devolve UMA ficha por CPF: a mesma
- * pessoa com várias compras (ou em edições diferentes) é uma ligação só.
+ * Lê o .txt exportado pelo checker e devolve UMA ficha por CPF, com todas as
+ * compras dela. Formato de um bloco:
+ *
+ *   === CPF 00201607557 ===
+ *   Nome: rosilene Ferreira da Silva
+ *   Telefone: (19) 98352-9292 (confirmado 19 9**** 9292)
+ *   Compras: 2
+ *   Idade 50
+ *   Profissão Comerciante atacadista
+ *   Renda R$ 1.403,02
+ *
+ *   Compra 1 — pedido 121103792 — Edição 07 Bolada Pix - R$ 300.000
+ *       prêmio: Trezentos Mil Reais
+ *       sorteio: 01/07/2026 às 20:00
+ *       comprado em: 01/07/2026 12:15
+ *       pagamento: Pix · concluido · R$ 13,80 (pago em 01/07/2026 12:16)
+ *       24 número(s)
+ *
  * Roda no servidor (importação) e no navegador (prévia antes de importar).
  */
+
+export interface Compra {
+  pedido: string | null;
+  /** Linha da compra depois do pedido, ex. "Edição 07 Bolada Pix - R$ 300.000". */
+  titulo: string | null;
+  premio: string | null;
+  sorteio_em: string | null; // ISO
+  comprado_em: string | null; // ISO
+  pagamento_metodo: string | null;
+  pagamento_status: string | null;
+  pagamento_valor: number | null;
+  pagamento_pago_em: string | null; // ISO
+  qtd_numeros: number | null;
+}
 
 export interface FichaImportada {
   cpf: string;
   nome: string;
   telefone: string | null;
+  telefone_confirmado: boolean;
   idade: number | null;
   profissao: string | null;
   renda: number | null;
+  /** Da compra mais recente. */
   pedido: string | null;
-  comprado_em: string | null; // ISO
-  pagamento_valor: number | null;
+  comprado_em: string | null;
   pagamento_status: string | null;
-  pagamento_pago_em: string | null; // ISO
+  pagamento_pago_em: string | null;
+  /** Somados de todas as compras. */
+  pagamento_valor: number | null;
   qtd_numeros: number | null;
+  /** Todas as compras, mais recente primeiro. */
+  compras: Compra[];
 }
 
 export interface ResultadoParse {
@@ -46,52 +80,72 @@ function parseDataHoraBr(texto: string | undefined | null): string | null {
   return `${yyyy}-${mm}-${dd}T${hh}:${min}:00-03:00`;
 }
 
-function somar(a: number | null, b: number | null): number | null {
-  return a == null ? b : b == null ? a : a + b;
-}
-
-interface Compra {
-  pedido: string | null;
-  comprado_em: string | null;
-  pagamento_valor: number | null;
-  pagamento_status: string | null;
-  pagamento_pago_em: string | null;
-  qtd_numeros: number | null;
-}
-
 function lerCompra(blocoCompra: string): Compra {
   const linhaCompra = blocoCompra.split(/\r?\n/)[0];
-  const pedido = linhaCompra.match(/pedido\s+(\S+)/i)?.[1] ?? null;
-  const compradoMatch = blocoCompra.match(/comprado em:\s*(.+)/i);
-  const pagamentoMatch = blocoCompra.match(/pagamento:\s*(.+)/i);
-  const numerosMatch = blocoCompra.match(/(\d+)\s*número\(s\)/i);
-
-  let pagamento_status: string | null = null;
-  let pagamento_valor: number | null = null;
-  let pagamento_pago_em: string | null = null;
-  if (pagamentoMatch) {
-    // "Pix · concluido · R$ 13,80 (pago em 01/07/2026 12:16)"
-    const partes = pagamentoMatch[1].split("·").map((p) => p.trim());
-    pagamento_status = partes[1] ?? null;
-    pagamento_valor = parseValorReais(partes[2]);
-    pagamento_pago_em = parseDataHoraBr(pagamentoMatch[1].match(/pago em\s+([\d/: ]+)/i)?.[1]);
-  }
+  // "Compra 1 — pedido 121103792 — Edição 07 Bolada Pix - R$ 300.000"
+  const partes = linhaCompra.split("—").map((p) => p.trim());
+  const pagamento = blocoCompra.match(/pagamento:\s*(.+)/i)?.[1] ?? null;
+  // "Pix · concluido · R$ 13,80 (pago em 01/07/2026 12:16)"
+  const partesPagamento = pagamento?.split("·").map((p) => p.trim()) ?? [];
+  const numeros = blocoCompra.match(/(\d+)\s*número\(s\)/i)?.[1];
 
   return {
-    pedido,
-    comprado_em: parseDataHoraBr(compradoMatch?.[1] ?? null),
-    pagamento_valor,
-    pagamento_status,
-    pagamento_pago_em,
-    qtd_numeros: numerosMatch ? Number(numerosMatch[1]) : null,
+    pedido: linhaCompra.match(/pedido\s+(\S+)/i)?.[1] ?? null,
+    titulo: partes.length >= 3 ? partes.slice(2).join(" — ") : null,
+    premio: blocoCompra.match(/prêmio:\s*(.+)/i)?.[1].trim() ?? null,
+    sorteio_em: parseDataHoraBr(blocoCompra.match(/sorteio:\s*(.+)/i)?.[1]),
+    comprado_em: parseDataHoraBr(blocoCompra.match(/comprado em:\s*(.+)/i)?.[1]),
+    pagamento_metodo: partesPagamento[0] || null,
+    pagamento_status: partesPagamento[1] || null,
+    pagamento_valor: parseValorReais(partesPagamento[2]),
+    pagamento_pago_em: parseDataHoraBr(pagamento?.match(/pago em\s+([\d/: ]+)/i)?.[1]),
+    qtd_numeros: numeros ? Number(numeros) : null,
+  };
+}
+
+function somar(valores: (number | null)[]): number | null {
+  const presentes = valores.filter((v): v is number => v != null);
+  return presentes.length ? presentes.reduce((a, b) => a + b, 0) : null;
+}
+
+/**
+ * Junta listas de compras sem repetir pedido (a primeira lista vence) e ordena da
+ * mais recente pra mais antiga. Compras sem número de pedido nunca se fundem.
+ */
+export function juntarCompras(...listas: Compra[][]): Compra[] {
+  const vistas = new Set<string>();
+  const saida: Compra[] = [];
+  for (const lista of listas) {
+    for (const c of lista) {
+      if (c.pedido) {
+        if (vistas.has(c.pedido)) continue;
+        vistas.add(c.pedido);
+      }
+      saida.push(c);
+    }
+  }
+  return saida.sort((a, b) => (b.comprado_em ?? "").localeCompare(a.comprado_em ?? ""));
+}
+
+/** Campos de compra da ficha (mais recente + somas) a partir da lista completa. */
+export function resumoCompras(compras: Compra[]) {
+  const recente = compras[0];
+  return {
+    pedido: recente?.pedido ?? null,
+    comprado_em: recente?.comprado_em ?? null,
+    pagamento_status: recente?.pagamento_status ?? null,
+    pagamento_pago_em: recente?.pagamento_pago_em ?? null,
+    pagamento_valor: somar(compras.map((c) => c.pagamento_valor)),
+    qtd_numeros: somar(compras.map((c) => c.qtd_numeros)),
   };
 }
 
 export function parseFichas(conteudo: string): ResultadoParse {
   const porCpf = new Map<string, FichaImportada>();
-  let compras = 0;
+  let totalCompras = 0;
 
   const blocosCpf = conteudo
+    .replace(/^﻿/, "")
     .split(/(?=^===\s*CPF)/m)
     .map((b) => b.trim())
     .filter(Boolean);
@@ -102,13 +156,13 @@ export function parseFichas(conteudo: string): ResultadoParse {
     if (!cpf) continue;
 
     // Cada "Compra N — ..." do bloco; CPF sem compra não vira ficha.
-    const comprasDoBloco = bloco
+    const compras = bloco
       .split(/(?=^Compra\s+\d+\s*—)/m)
       .map((b) => b.trim())
       .filter((b) => b.startsWith("Compra"))
       .map(lerCompra);
-    if (comprasDoBloco.length === 0) continue;
-    compras += comprasDoBloco.length;
+    if (compras.length === 0) continue;
+    totalCompras += compras.length;
 
     const campo = (label: string): string | null => {
       const linha = linhas.find((l) => l.trim().startsWith(`${label}:`) || l.trim().startsWith(`${label} `));
@@ -117,49 +171,40 @@ export function parseFichas(conteudo: string): ResultadoParse {
       return linha.slice(idx).replace(/^[:\s]+/, "").trim() || null;
     };
 
+    const telefoneBruto = campo("Telefone");
     // "(19) 98352-9292 (confirmado 19 9**** 9292)" -> fica só o número real, sem máscara.
-    const telefone = campo("Telefone")?.match(/\(\d{2}\)\s*\d{4,5}-\d{4}/)?.[0] ?? null;
+    const telefone = telefoneBruto?.match(/\(\d{2}\)\s*\d{4,5}-\d{4}/)?.[0] ?? null;
     const idade = Number(campo("Idade")?.match(/\d+/)?.[0]);
 
-    // A compra mais recente dá pedido/data/pagamento; números e valor são somados.
-    const recente = [...comprasDoBloco].sort((a, b) => (b.comprado_em ?? "").localeCompare(a.comprado_em ?? ""))[0];
-    const deste: FichaImportada = {
+    const deste: Omit<FichaImportada, keyof ReturnType<typeof resumoCompras>> = {
       cpf,
       nome: campo("Nome") ?? "(sem nome)",
       telefone,
+      telefone_confirmado: Boolean(telefone && /confirmado/i.test(telefoneBruto ?? "")),
       idade: Number.isFinite(idade) ? idade : null,
       profissao: campo("Profissão"),
       renda: parseValorReais(campo("Renda")),
-      pedido: recente.pedido,
-      comprado_em: recente.comprado_em,
-      pagamento_status: recente.pagamento_status,
-      pagamento_pago_em: recente.pagamento_pago_em,
-      pagamento_valor: comprasDoBloco.reduce<number | null>((s, c) => somar(s, c.pagamento_valor), null),
-      qtd_numeros: comprasDoBloco.reduce<number | null>((s, c) => somar(s, c.qtd_numeros), null),
+      compras,
     };
 
-    // O mesmo CPF pode aparecer em mais de um bloco do arquivo.
+    // O mesmo CPF pode aparecer em mais de um bloco do arquivo: o primeiro manda nos
+    // dados da pessoa (completando o que faltar), as compras se somam.
     const anterior = porCpf.get(cpf);
-    if (!anterior) {
-      porCpf.set(cpf, deste);
-      continue;
-    }
-    const maisRecente = (deste.comprado_em ?? "") > (anterior.comprado_em ?? "") ? deste : anterior;
-    porCpf.set(cpf, {
-      cpf,
-      nome: anterior.nome !== "(sem nome)" ? anterior.nome : deste.nome,
-      telefone: anterior.telefone ?? deste.telefone,
-      idade: anterior.idade ?? deste.idade,
-      profissao: anterior.profissao ?? deste.profissao,
-      renda: anterior.renda ?? deste.renda,
-      pedido: maisRecente.pedido,
-      comprado_em: maisRecente.comprado_em,
-      pagamento_status: maisRecente.pagamento_status,
-      pagamento_pago_em: maisRecente.pagamento_pago_em,
-      pagamento_valor: somar(anterior.pagamento_valor, deste.pagamento_valor),
-      qtd_numeros: somar(anterior.qtd_numeros, deste.qtd_numeros),
-    });
+    const pessoa = anterior
+      ? {
+          cpf,
+          nome: anterior.nome !== "(sem nome)" ? anterior.nome : deste.nome,
+          telefone: anterior.telefone ?? deste.telefone,
+          telefone_confirmado: anterior.telefone ? anterior.telefone_confirmado : deste.telefone_confirmado,
+          idade: anterior.idade ?? deste.idade,
+          profissao: anterior.profissao ?? deste.profissao,
+          renda: anterior.renda ?? deste.renda,
+          compras: juntarCompras(anterior.compras, deste.compras),
+        }
+      : { ...deste, compras: juntarCompras(deste.compras) };
+
+    porCpf.set(cpf, { ...pessoa, ...resumoCompras(pessoa.compras) });
   }
 
-  return { fichas: Array.from(porCpf.values()), compras };
+  return { fichas: Array.from(porCpf.values()), compras: totalCompras };
 }

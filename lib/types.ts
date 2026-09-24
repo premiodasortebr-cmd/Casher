@@ -1,4 +1,6 @@
 export type FichaStatus = "pendente" | "deu_bom" | "deu_ruim";
+export type { Compra } from "./import/parseFichas";
+import type { Compra } from "./import/parseFichas";
 
 export interface Ligador {
   id: string;
@@ -37,6 +39,9 @@ export interface Ficha {
   status_atualizado_em: string | null;
   observacao: string | null;
   created_at: string;
+  telefone_confirmado: boolean;
+  /** Todas as compras do .txt, mais recente primeiro (jsonb). */
+  compras: Compra[];
 }
 
 /** view rifas_resumo */
@@ -73,6 +78,14 @@ export interface FichaLista {
   ligador_nome: string | null;
   rifa_nome: string;
   busca: string;
+  // Opcionais: só existem depois da migration 0007 (podem vir undefined antes dela).
+  telefone_confirmado?: boolean;
+  idade?: number | null;
+  profissao?: string | null;
+  renda?: number | null;
+  qtd_numeros?: number | null;
+  pagamento_valor?: number | null;
+  qtd_compras?: number;
 }
 
 /** view rifa_ligadores_resumo */

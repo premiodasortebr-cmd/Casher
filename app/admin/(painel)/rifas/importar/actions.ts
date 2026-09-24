@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireAdminSession } from "@/lib/auth/guard";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { parseFichas, type FichaImportada } from "@/lib/import/parseFichas";
+import { juntarCompras, parseFichas, resumoCompras, type FichaImportada } from "@/lib/import/parseFichas";
 import { acharRifaPorNome, normalizarNomeRifa, validarNomeRifa } from "@/lib/rifas";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -24,24 +24,25 @@ export type EstadoImport = {
 };
 
 const COLUNAS_FICHA =
-  "cpf, nome, telefone, idade, profissao, renda, pedido, comprado_em, pagamento_valor, pagamento_status, pagamento_pago_em, qtd_numeros";
+  "cpf, nome, telefone, telefone_confirmado, idade, profissao, renda, pedido, comprado_em, pagamento_valor, pagamento_status, pagamento_pago_em, qtd_numeros, compras";
 
-/** Campo vazio no arquivo novo mantém o que já estava salvo; campo preenchido atualiza. */
+/**
+ * Campo vazio no arquivo novo mantém o que já estava salvo; campo preenchido
+ * atualiza. Compras se somam (mesmo pedido não repete; o arquivo novo vence).
+ */
 function completarCom(nova: FichaImportada, salva: FichaImportada | undefined): FichaImportada {
   if (!salva) return nova;
+  const compras = juntarCompras(nova.compras, Array.isArray(salva.compras) ? salva.compras : []);
   return {
     cpf: nova.cpf,
     nome: nova.nome !== "(sem nome)" ? nova.nome : salva.nome,
     telefone: nova.telefone ?? salva.telefone,
+    telefone_confirmado: nova.telefone ? nova.telefone_confirmado : Boolean(salva.telefone_confirmado),
     idade: nova.idade ?? salva.idade,
     profissao: nova.profissao ?? salva.profissao,
     renda: nova.renda ?? salva.renda,
-    pedido: nova.pedido ?? salva.pedido,
-    comprado_em: nova.comprado_em ?? salva.comprado_em,
-    pagamento_valor: nova.pagamento_valor ?? salva.pagamento_valor,
-    pagamento_status: nova.pagamento_status ?? salva.pagamento_status,
-    pagamento_pago_em: nova.pagamento_pago_em ?? salva.pagamento_pago_em,
-    qtd_numeros: nova.qtd_numeros ?? salva.qtd_numeros,
+    compras,
+    ...resumoCompras(compras),
   };
 }
 

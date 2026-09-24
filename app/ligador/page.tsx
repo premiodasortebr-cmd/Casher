@@ -148,7 +148,7 @@ export default async function LigadorHomePage({ searchParams }: { searchParams: 
         ) : (
           <div className="flex flex-col gap-3">
             {(fichas ?? []).map((f) => (
-              <FichaCard key={f.id} ficha={f} rifaNome={f.rifa_nome} />
+              <FichaCard key={f.id} ficha={f} />
             ))}
           </div>
         )}
