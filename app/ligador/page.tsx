@@ -13,7 +13,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { sairLigador } from "@/lib/auth/actions";
 import { formatNumero } from "@/lib/format";
 import { montarQuery, normalizarBusca, pagina as lerPagina, texto, type SearchParams } from "@/lib/listagem";
-import { STATUS_NA_FILA, STATUS_RESOLVIDOS, type FichaLista, type LigadorResumo } from "@/lib/types";
+import { STATUS_RESOLVIDOS, type FichaLista, type LigadorResumo } from "@/lib/types";
 
 type Aba = "fila" | "retornar" | "historico";
 import { FichaCard } from "./FichaCard";
@@ -35,7 +35,9 @@ export default async function LigadorHomePage({ searchParams }: { searchParams: 
     .from("fichas_lista")
     .select("*", { count: "exact" })
     .eq("ligador_id", sessao.ligadorId);
-  if (aba === "fila") consulta = consulta.in("status", STATUS_NA_FILA);
+  // "Fila" é escrita como NÃO-resolvida: assim funciona mesmo antes da migration
+  // 0008 (o banco só conhece 'retornar' depois dela).
+  if (aba === "fila") consulta = consulta.not("status", "in", `(${STATUS_RESOLVIDOS.join(",")})`);
   else if (aba === "retornar") consulta = consulta.eq("status", "retornar");
   else consulta = consulta.in("status", STATUS_RESOLVIDOS);
   const busca = normalizarBusca(q);
@@ -47,7 +49,7 @@ export default async function LigadorHomePage({ searchParams }: { searchParams: 
   if (aba === "historico") consulta = consulta.order("status_atualizado_em", { ascending: false, nullsFirst: false });
 
   const de = (pagina - 1) * POR_PAGINA;
-  const [{ data: fichas, count, error }, { data: resumo }, { count: retornar }] = await Promise.all([
+  const [{ data: fichas, count, error: erroLista }, { data: resumo }, { count: retornar }] = await Promise.all([
     consulta.order("nome").range(de, de + POR_PAGINA - 1).returns<FichaLista[]>(),
     supabase.from("ligadores_resumo").select("*").eq("id", sessao.ligadorId).maybeSingle<LigadorResumo>(),
     supabase
@@ -57,6 +59,9 @@ export default async function LigadorHomePage({ searchParams }: { searchParams: 
       .eq("status", "retornar"),
   ]);
 
+  // Banco ainda sem o status 'retornar' (migration 0008 não colada): aba vazia, sem quebrar.
+  const semRetornar = /enum ficha_status/.test(erroLista?.message ?? "");
+  const error = semRetornar && aba === "retornar" ? null : erroLista;
   // offset > total: PostgREST responde 416 (ex.: marcou todas as fichas da página 2).
   if (error?.code === "PGRST103") redirect(montarQuery(BASE, filtros));
   if (error) throw new Error(`Falha ao carregar fichas: ${error.message}`);
