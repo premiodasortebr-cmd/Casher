@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { ArrowCounterClockwiseIcon, CheckCircleIcon, XCircleIcon } from "@phosphor-icons/react/dist/ssr";
+import { ArrowClockwiseIcon, ArrowCounterClockwiseIcon, CheckCircleIcon, XCircleIcon } from "@phosphor-icons/react/dist/ssr";
 import { Input, Textarea } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Layout";
 import { marcarStatus } from "./actions";
 import type { FichaStatus } from "@/lib/types";
 
-/** Observação + Deu bom / Deu ruim. `compacto` é a versão do card da fila. */
+/** Observação + Deu bom / Deu ruim / Retornar. `compacto` é a versão do card da fila. */
 export function FichaAcoes({
   fichaId,
   status,
@@ -23,6 +23,7 @@ export function FichaAcoes({
   const [observacao, setObservacao] = useState(inicial ?? "");
   const [erro, setErro] = useState<string | null>(null);
   const [pendente, startTransition] = useTransition();
+  const tamanho = compacto ? "sm" : "lg";
 
   function marcar(novo: FichaStatus) {
     startTransition(async () => {
@@ -52,16 +53,11 @@ export function FichaAcoes({
       {erro && <Alert icon={<XCircleIcon weight="fill" />}>{erro}</Alert>}
 
       <div className="grid grid-cols-2 gap-2">
-        <Button
-          size={compacto ? "sm" : "lg"}
-          disabled={pendente}
-          onClick={() => marcar("deu_bom")}
-          icon={<CheckCircleIcon weight="fill" />}
-        >
+        <Button size={tamanho} disabled={pendente} onClick={() => marcar("deu_bom")} icon={<CheckCircleIcon weight="fill" />}>
           Deu bom
         </Button>
         <Button
-          size={compacto ? "sm" : "lg"}
+          size={tamanho}
           variant="danger"
           disabled={pendente}
           onClick={() => marcar("deu_ruim")}
@@ -70,7 +66,17 @@ export function FichaAcoes({
           Deu ruim
         </Button>
       </div>
-      {status !== "pendente" && (
+      <Button
+        size={tamanho}
+        variant="secondary"
+        block
+        disabled={pendente || status === "retornar"}
+        onClick={() => marcar("retornar")}
+        icon={<ArrowClockwiseIcon weight="bold" />}
+      >
+        {status === "retornar" ? "Marcada pra retornar" : "Retornar — não atendeu"}
+      </Button>
+      {(status === "deu_bom" || status === "deu_ruim") && (
         <Button
           size="sm"
           variant="ghost"
@@ -79,7 +85,7 @@ export function FichaAcoes({
           onClick={() => marcar("pendente")}
           icon={<ArrowCounterClockwiseIcon />}
         >
-          Voltar pra pendente
+          Voltar pra fila
         </Button>
       )}
     </div>

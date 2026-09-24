@@ -12,8 +12,10 @@ import { requireLigadorSession } from "@/lib/auth/guard";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sairLigador } from "@/lib/auth/actions";
 import { formatNumero } from "@/lib/format";
-import { ehStatus, montarQuery, normalizarBusca, pagina as lerPagina, texto, type SearchParams } from "@/lib/listagem";
-import type { FichaLista, LigadorResumo } from "@/lib/types";
+import { montarQuery, normalizarBusca, pagina as lerPagina, texto, type SearchParams } from "@/lib/listagem";
+import { STATUS_NA_FILA, STATUS_RESOLVIDOS, type FichaLista, type LigadorResumo } from "@/lib/types";
+
+type Aba = "fila" | "retornar" | "historico";
 import { FichaCard } from "./FichaCard";
 
 const BASE = "/ligador";
@@ -24,23 +26,35 @@ export default async function LigadorHomePage({ searchParams }: { searchParams: 
   const supabase = createAdminClient();
 
   const q = texto(sp, "q");
-  const abaBruta = texto(sp, "status") || "pendente";
-  const aba = abaBruta === "todas" || ehStatus(abaBruta) ? abaBruta : "pendente";
+  const abaBruta = texto(sp, "aba");
+  const aba: Aba = abaBruta === "retornar" || abaBruta === "historico" ? abaBruta : "fila";
   const pagina = lerPagina(sp);
-  const filtros = { q, status: aba === "pendente" ? "" : aba };
+  const filtros = { q, aba: aba === "fila" ? "" : aba };
 
   let consulta = supabase
     .from("fichas_lista")
     .select("*", { count: "exact" })
     .eq("ligador_id", sessao.ligadorId);
-  if (aba !== "todas") consulta = consulta.eq("status", aba);
+  if (aba === "fila") consulta = consulta.in("status", STATUS_NA_FILA);
+  else if (aba === "retornar") consulta = consulta.eq("status", "retornar");
+  else consulta = consulta.in("status", STATUS_RESOLVIDOS);
   const busca = normalizarBusca(q);
   if (busca) consulta = consulta.ilike("busca", `%${busca}%`);
 
+  // Na fila, quem pediu pra retornar vem antes de quem ainda não foi ligado; no
+  // histórico, o que foi marcado por último vem primeiro.
+  if (aba === "fila") consulta = consulta.order("status", { ascending: false });
+  if (aba === "historico") consulta = consulta.order("status_atualizado_em", { ascending: false, nullsFirst: false });
+
   const de = (pagina - 1) * POR_PAGINA;
-  const [{ data: fichas, count, error }, { data: resumo }] = await Promise.all([
+  const [{ data: fichas, count, error }, { data: resumo }, { count: retornar }] = await Promise.all([
     consulta.order("nome").range(de, de + POR_PAGINA - 1).returns<FichaLista[]>(),
     supabase.from("ligadores_resumo").select("*").eq("id", sessao.ligadorId).maybeSingle<LigadorResumo>(),
+    supabase
+      .from("fichas_lista")
+      .select("id", { count: "exact", head: true })
+      .eq("ligador_id", sessao.ligadorId)
+      .eq("status", "retornar"),
   ]);
 
   // offset > total: PostgREST responde 416 (ex.: marcou todas as fichas da página 2).
@@ -56,11 +70,10 @@ export default async function LigadorHomePage({ searchParams }: { searchParams: 
     deu_bom: resumo?.deu_bom ?? 0,
     deu_ruim: resumo?.deu_ruim ?? 0,
   };
-  const abas: { chave: string; label: string; n: number }[] = [
-    { chave: "pendente", label: "Pendentes", n: contagem.pendente },
-    { chave: "deu_bom", label: "Deu bom", n: contagem.deu_bom },
-    { chave: "deu_ruim", label: "Deu ruim", n: contagem.deu_ruim },
-    { chave: "todas", label: "Todas", n: resumo?.atribuidas ?? 0 },
+  const abas: { chave: Aba; label: string; n: number }[] = [
+    { chave: "fila", label: "Fila", n: contagem.pendente },
+    { chave: "retornar", label: "Retornar", n: retornar ?? 0 },
+    { chave: "historico", label: "Histórico", n: contagem.deu_bom + contagem.deu_ruim },
   ];
 
   return (
@@ -116,7 +129,7 @@ export default async function LigadorHomePage({ searchParams }: { searchParams: 
               return (
                 <Link
                   key={a.chave}
-                  href={montarQuery(BASE, { q, status: a.chave === "pendente" ? "" : a.chave })}
+                  href={montarQuery(BASE, { q, aba: a.chave === "fila" ? "" : a.chave })}
                   scroll={false}
                   className={`flex h-9 shrink-0 items-center gap-2 rounded-full border px-3.5 text-[13px] transition-colors duration-300 ease-spring ${
                     on ? "border-accent-line bg-accent-soft text-accent" : "border-line bg-white/[0.02] text-fg-muted hover:text-fg"
@@ -135,13 +148,23 @@ export default async function LigadorHomePage({ searchParams }: { searchParams: 
           <Card>
             <EmptyState
               icon={<TicketIcon />}
-              title={q ? "Nada encontrado" : aba === "pendente" ? "Fila zerada" : "Nenhuma ficha aqui"}
+              title={
+                q
+                  ? "Nada encontrado"
+                  : aba === "fila"
+                    ? "Fila zerada"
+                    : aba === "retornar"
+                      ? "Ninguém pra retornar"
+                      : "Histórico vazio"
+              }
               description={
                 q
                   ? "Tenta outro nome ou número."
-                  : aba === "pendente"
+                  : aba === "fila"
                     ? "Quando o admin liberar mais fichas, elas aparecem aqui."
-                    : undefined
+                    : aba === "retornar"
+                      ? "As fichas que você marcar como 'Retornar' ficam aqui e no topo da fila."
+                      : "Tudo que você marcar como deu bom ou deu ruim sai da fila e fica aqui."
               }
             />
           </Card>

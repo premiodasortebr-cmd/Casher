@@ -1,5 +1,10 @@
 import type { ReactNode } from "react";
-import { CheckCircleIcon, HourglassMediumIcon, XCircleIcon } from "@phosphor-icons/react/dist/ssr";
+import {
+  ArrowClockwiseIcon,
+  CheckCircleIcon,
+  HourglassMediumIcon,
+  XCircleIcon,
+} from "@phosphor-icons/react/dist/ssr";
 import type { FichaStatus } from "@/lib/types";
 
 type Tom = "neutral" | "accent" | "danger" | "warning";
@@ -48,6 +53,7 @@ export const STATUS_INFO: Record<
   { label: string; tom: Tom; Icone: typeof CheckCircleIcon }
 > = {
   pendente: { label: "Pendente", tom: "warning", Icone: HourglassMediumIcon },
+  retornar: { label: "Retornar", tom: "neutral", Icone: ArrowClockwiseIcon },
   deu_bom: { label: "Deu bom", tom: "accent", Icone: CheckCircleIcon },
   deu_ruim: { label: "Deu ruim", tom: "danger", Icone: XCircleIcon },
 };

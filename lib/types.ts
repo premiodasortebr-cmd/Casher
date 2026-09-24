@@ -1,4 +1,9 @@
-export type FichaStatus = "pendente" | "deu_bom" | "deu_ruim";
+/** `retornar` = não atendeu, ligar de novo (continua na fila do ligador). */
+export type FichaStatus = "pendente" | "retornar" | "deu_bom" | "deu_ruim";
+/** O que ainda está na fila (não resolvido). */
+export const STATUS_NA_FILA: FichaStatus[] = ["pendente", "retornar"];
+/** O que já foi resolvido (histórico). */
+export const STATUS_RESOLVIDOS: FichaStatus[] = ["deu_bom", "deu_ruim"];
 export type { Compra } from "./import/parseFichas";
 import type { Compra } from "./import/parseFichas";
 

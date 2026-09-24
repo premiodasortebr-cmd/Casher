@@ -13,7 +13,7 @@ export function pagina(sp: SearchParams): number {
 }
 
 export function ehStatus(v: string): v is FichaStatus {
-  return v === "pendente" || v === "deu_bom" || v === "deu_ruim";
+  return v === "pendente" || v === "retornar" || v === "deu_bom" || v === "deu_ruim";
 }
 
 /**

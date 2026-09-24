@@ -22,6 +22,7 @@ export function FichasToolbar({ ligadores }: { ligadores: { id: string; nome: st
       >
         <option value="">Todos os status</option>
         <option value="pendente">Pendente</option>
+        <option value="retornar">Retornar</option>
         <option value="deu_bom">Deu bom</option>
         <option value="deu_ruim">Deu ruim</option>
       </Select>
