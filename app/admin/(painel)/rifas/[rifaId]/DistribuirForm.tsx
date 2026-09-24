@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 import { CheckCircleIcon, PaperPlaneTiltIcon, WarningCircleIcon } from "@phosphor-icons/react/dist/ssr";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { Field, Input, Select } from "@/components/ui/Input";
@@ -21,12 +21,11 @@ export function DistribuirForm({
   ligadores: { id: string; nome: string; pendentes: number }[];
 }) {
   const [estado, formAction, pendente] = useActionState<EstadoDistribuicao, FormData>(distribuirFichas, {});
-  const [quantidade, setQuantidade] = useState(Math.min(50, disponiveis));
-
-  // Depois de enviar, o servidor recalcula `disponiveis`; realinha o campo.
-  useEffect(() => {
-    setQuantidade((q) => Math.min(Math.max(q, 1), Math.max(disponiveis, 1)));
-  }, [disponiveis]);
+  // Texto cru do campo; o limite vem de `disponiveis` na hora de renderizar (ele cai
+  // depois de cada envio, e pedir mais que o disponível só manda o que tem).
+  const [texto, setTexto] = useState(String(Math.min(50, disponiveis)));
+  const pedido = Number.parseInt(texto, 10);
+  const enviar = Number.isInteger(pedido) && pedido > 0 ? Math.min(pedido, disponiveis) : 0;
 
   const semEstoque = disponiveis === 0;
   const semLigador = ligadores.length === 0;
@@ -43,6 +42,7 @@ export function DistribuirForm({
       />
       <form action={formAction} className="flex flex-col gap-4 p-5">
         <input type="hidden" name="rifaId" value={rifaId} />
+        <input type="hidden" name="quantidade" value={enviar} />
 
         <Field label="Ligador" htmlFor="ligadorId">
           <Select id="ligadorId" name="ligadorId" required disabled={semLigador || semEstoque}>
@@ -67,13 +67,11 @@ export function DistribuirForm({
           <div className="flex flex-col gap-2">
             <Input
               id="quantidade"
-              name="quantidade"
               type="number"
               inputMode="numeric"
               min={1}
-              max={Math.max(disponiveis, 1)}
-              value={quantidade}
-              onChange={(e) => setQuantidade(Number(e.target.value))}
+              value={texto}
+              onChange={(e) => setTexto(e.target.value)}
               disabled={semLigador || semEstoque}
               className="font-mono tabular-nums"
             />
@@ -82,9 +80,9 @@ export function DistribuirForm({
                 <button
                   key={n}
                   type="button"
-                  onClick={() => setQuantidade(n)}
+                  onClick={() => setTexto(String(n))}
                   className={`h-7 rounded-full border px-3 text-xs font-medium transition-colors duration-300 ease-spring ${
-                    quantidade === n
+                    enviar === n
                       ? "border-accent-line bg-accent-soft text-accent"
                       : "border-line-strong bg-white/[0.03] text-fg-muted hover:text-fg"
                   }`}
@@ -95,9 +93,9 @@ export function DistribuirForm({
               {!semEstoque && (
                 <button
                   type="button"
-                  onClick={() => setQuantidade(disponiveis)}
+                  onClick={() => setTexto(String(disponiveis))}
                   className={`h-7 rounded-full border px-3 text-xs font-medium transition-colors duration-300 ease-spring ${
-                    quantidade === disponiveis
+                    enviar === disponiveis
                       ? "border-accent-line bg-accent-soft text-accent"
                       : "border-line-strong bg-white/[0.03] text-fg-muted hover:text-fg"
                   }`}
@@ -120,14 +118,16 @@ export function DistribuirForm({
           type="submit"
           size="lg"
           block
-          disabled={pendente || semLigador || semEstoque || quantidade < 1}
+          disabled={pendente || semLigador || semEstoque || enviar < 1}
           icon={<PaperPlaneTiltIcon weight="fill" />}
         >
           {pendente
             ? "Enviando…"
             : semEstoque
               ? "Nada pra enviar"
-              : `Enviar ${formatNumero(Math.min(quantidade, disponiveis))} ficha(s)`}
+              : enviar < 1
+                ? "Digite a quantidade"
+                : `Enviar ${formatNumero(enviar)} ficha(s)`}
         </Button>
       </form>
     </Card>

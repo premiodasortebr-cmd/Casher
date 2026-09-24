@@ -10,12 +10,10 @@ export interface Ligador {
   created_at: string;
 }
 
+/** A rifa (ex.: "Bolada Pix"). A edição que vem no .txt não é guardada. */
 export interface Rifa {
   id: string;
   nome: string;
-  premio_descricao: string | null;
-  premio_valor: number | null;
-  data_sorteio: string | null;
   created_at: string;
 }
 

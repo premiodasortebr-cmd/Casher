@@ -1,11 +1,10 @@
 import { notFound, redirect } from "next/navigation";
 import {
   ArrowLeftIcon,
-  CalendarIcon,
   CheckCircleIcon,
   HourglassMediumIcon,
   TicketIcon,
-  TrophyIcon,
+  UploadSimpleIcon,
   UsersThreeIcon,
 } from "@phosphor-icons/react/dist/ssr";
 import { PageHeader, EmptyState } from "@/components/ui/Layout";
@@ -18,13 +17,14 @@ import { Table, Th, Tr, Td } from "@/components/ui/Table";
 import { Pagination } from "@/components/ui/Pagination";
 import { requireAdminSession } from "@/lib/auth/guard";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { formatBRL, formatCPF, formatDataHora, formatNumero, formatRelativo } from "@/lib/format";
+import { formatCPF, formatNumero, formatRelativo } from "@/lib/format";
 import { ehStatus, montarQuery, normalizarBusca, pagina as lerPagina, texto, type SearchParams } from "@/lib/listagem";
 import type { FichaLista, RifaLigadorResumo, RifaResumo } from "@/lib/types";
 import { DistribuirForm } from "./DistribuirForm";
 import { PorLigador } from "./PorLigador";
 import { FichasToolbar } from "./FichasToolbar";
 import { RevogarButton } from "./RevogarButton";
+import { RifaAcoes } from "./RifaAcoes";
 
 const POR_PAGINA = 50;
 
@@ -95,34 +95,52 @@ export default async function RifaDetalhePage({
   }));
   const temFiltro = Boolean(q || status || ligador);
 
+  const cabecalho = (
+    <PageHeader
+      eyebrow="Rifa"
+      title={rifa.nome}
+      description={
+        rifa.total === 0
+          ? "Nenhuma ficha ainda."
+          : `${formatNumero(rifa.total)} fichas de todos os arquivos importados pra esta rifa.`
+      }
+      back={
+        <ButtonLink href="/admin/rifas" variant="ghost" size="sm" icon={<ArrowLeftIcon />}>
+          Rifas
+        </ButtonLink>
+      }
+      actions={<RifaAcoes rifaId={rifaId} nome={rifa.nome} vazia={rifa.total === 0} />}
+    />
+  );
+
+  if (rifa.total === 0) {
+    return (
+      <div className="flex flex-col gap-8">
+        {cabecalho}
+        <Card>
+          <EmptyState
+            icon={<UploadSimpleIcon />}
+            title={`Suba o primeiro arquivo pra ${rifa.nome}`}
+            description="Tudo que estiver no .txt do checker entra nesta rifa, uma ficha por pessoa. Depois é só distribuir entre os ligadores."
+            action={
+              <ButtonLink
+                href={`/admin/rifas/importar?rifa=${rifaId}`}
+                size="lg"
+                icon={<UploadSimpleIcon weight="bold" />}
+              >
+                Importar fichas
+              </ButtonLink>
+            }
+            className="py-20"
+          />
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-8">
-      <PageHeader
-        eyebrow="Rifa"
-        title={rifa.nome}
-        description={
-          <span className="flex flex-wrap items-center gap-x-4 gap-y-1">
-            {rifa.premio_descricao && (
-              <span className="inline-flex items-center gap-1.5">
-                <TrophyIcon size={15} className="text-fg-subtle" />
-                {rifa.premio_descricao}
-              </span>
-            )}
-            {rifa.premio_valor != null && <span>{formatBRL(rifa.premio_valor)}</span>}
-            {rifa.data_sorteio && (
-              <span className="inline-flex items-center gap-1.5">
-                <CalendarIcon size={15} className="text-fg-subtle" />
-                {formatDataHora(rifa.data_sorteio)}
-              </span>
-            )}
-          </span>
-        }
-        back={
-          <ButtonLink href="/admin/rifas" variant="ghost" size="sm" icon={<ArrowLeftIcon />}>
-            Rifas
-          </ButtonLink>
-        }
-      />
+      {cabecalho}
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Stat label="Fichas" value={formatNumero(rifa.total)} icon={<TicketIcon />} />
@@ -148,12 +166,10 @@ export default async function RifaDetalhePage({
         />
       </div>
 
-      {rifa.total > 0 && (
-        <Card className="flex flex-col gap-3 px-5 py-4">
-          <StatusBar contagem={rifa} altura="h-2.5" />
-          <StatusLegenda contagem={rifa} />
-        </Card>
-      )}
+      <Card className="flex flex-col gap-3 px-5 py-4">
+        <StatusBar contagem={rifa} altura="h-2.5" />
+        <StatusLegenda contagem={rifa} />
+      </Card>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)]">
         <DistribuirForm rifaId={rifaId} disponiveis={rifa.disponiveis} ligadores={opcoesDistribuir} />

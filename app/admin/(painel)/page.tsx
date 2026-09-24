@@ -27,7 +27,8 @@ export default async function AdminHomePage() {
     supabase
       .from("rifas_resumo")
       .select("*")
-      .order("data_sorteio", { ascending: false, nullsFirst: false })
+      .order("disponiveis", { ascending: false })
+      .order("nome")
       .returns<RifaResumo[]>(),
     supabase
       .from("ligadores_resumo")

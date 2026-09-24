@@ -1,7 +1,8 @@
 /**
- * Lê o arquivo de texto exportado pelo checker (blocos "=== CPF ... ===" com
- * uma ou mais "Compra N" dentro) e devolve uma rifa por Edição encontrada,
- * cada uma com suas fichas (uma ficha = uma compra de um CPF).
+ * Lê o .txt exportado pelo checker (blocos "=== CPF ... ===" com uma ou mais
+ * "Compra N — pedido X — Edição ..." dentro) e devolve UMA ficha por CPF: a mesma
+ * pessoa com várias compras (ou em edições diferentes) é uma ligação só.
+ * Roda no servidor (importação) e no navegador (prévia antes de importar).
  */
 
 export interface FichaImportada {
@@ -19,12 +20,10 @@ export interface FichaImportada {
   qtd_numeros: number | null;
 }
 
-export interface RifaImportada {
-  nome: string; // ex.: "Edição 07 Bolada Pix - R$ 300.000"
-  premio_descricao: string | null;
-  premio_valor: number | null;
-  data_sorteio: string | null; // ISO
+export interface ResultadoParse {
   fichas: FichaImportada[];
+  /** Compras lidas no arquivo (≥ fichas: compras da mesma pessoa viram uma ficha). */
+  compras: number;
 }
 
 // Números em pt-BR: "." separa milhar, "," separa decimal (ex.: "1.403,02", "300.000", "0,69").
@@ -38,15 +37,6 @@ function parseValorReais(texto: string | undefined | null): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-/** Pega o ÚLTIMO valor "R$ ..." do texto — em nomes de rifa tipo "Edição 09 Bolada
- *  Pix - R$ 0,69 - R$ 300.000" o primeiro é o preço do número, o último é o prêmio. */
-function ultimoValorReaisComPrefixo(texto: string | undefined | null): number | null {
-  if (!texto) return null;
-  const ocorrencias = [...texto.matchAll(/R\$\s*([\d.,]+)/g)];
-  if (ocorrencias.length === 0) return null;
-  return parseValorReais(ocorrencias[ocorrencias.length - 1][1]);
-}
-
 /** "01/07/2026 12:15" ou "01/07/2026 às 20:00" -> ISO (America/Sao_Paulo, -03:00). */
 function parseDataHoraBr(texto: string | undefined | null): string | null {
   if (!texto) return null;
@@ -56,19 +46,50 @@ function parseDataHoraBr(texto: string | undefined | null): string | null {
   return `${yyyy}-${mm}-${dd}T${hh}:${min}:00-03:00`;
 }
 
-function extrairNomeRifa(linhaCompra: string): string | null {
-  // "Compra 1 — pedido 121103792 — Edição 07 Bolada Pix - R$ 300.000"
-  const partes = linhaCompra.split("—").map((p) => p.trim());
-  return partes.length >= 3 ? partes.slice(2).join(" — ") : null;
+function somar(a: number | null, b: number | null): number | null {
+  return a == null ? b : b == null ? a : a + b;
 }
 
-function extrairPedido(linhaCompra: string): string | null {
-  const m = linhaCompra.match(/pedido\s+(\S+)/i);
-  return m ? m[1] : null;
+interface Compra {
+  pedido: string | null;
+  comprado_em: string | null;
+  pagamento_valor: number | null;
+  pagamento_status: string | null;
+  pagamento_pago_em: string | null;
+  qtd_numeros: number | null;
 }
 
-export function parseFichas(conteudo: string): RifaImportada[] {
-  const rifasPorNome = new Map<string, RifaImportada>();
+function lerCompra(blocoCompra: string): Compra {
+  const linhaCompra = blocoCompra.split(/\r?\n/)[0];
+  const pedido = linhaCompra.match(/pedido\s+(\S+)/i)?.[1] ?? null;
+  const compradoMatch = blocoCompra.match(/comprado em:\s*(.+)/i);
+  const pagamentoMatch = blocoCompra.match(/pagamento:\s*(.+)/i);
+  const numerosMatch = blocoCompra.match(/(\d+)\s*número\(s\)/i);
+
+  let pagamento_status: string | null = null;
+  let pagamento_valor: number | null = null;
+  let pagamento_pago_em: string | null = null;
+  if (pagamentoMatch) {
+    // "Pix · concluido · R$ 13,80 (pago em 01/07/2026 12:16)"
+    const partes = pagamentoMatch[1].split("·").map((p) => p.trim());
+    pagamento_status = partes[1] ?? null;
+    pagamento_valor = parseValorReais(partes[2]);
+    pagamento_pago_em = parseDataHoraBr(pagamentoMatch[1].match(/pago em\s+([\d/: ]+)/i)?.[1]);
+  }
+
+  return {
+    pedido,
+    comprado_em: parseDataHoraBr(compradoMatch?.[1] ?? null),
+    pagamento_valor,
+    pagamento_status,
+    pagamento_pago_em,
+    qtd_numeros: numerosMatch ? Number(numerosMatch[1]) : null,
+  };
+}
+
+export function parseFichas(conteudo: string): ResultadoParse {
+  const porCpf = new Map<string, FichaImportada>();
+  let compras = 0;
 
   const blocosCpf = conteudo
     .split(/(?=^===\s*CPF)/m)
@@ -77,10 +98,17 @@ export function parseFichas(conteudo: string): RifaImportada[] {
 
   for (const bloco of blocosCpf) {
     const linhas = bloco.split(/\r?\n/);
-
-    const cpfMatch = linhas[0]?.match(/CPF\s+(\d+)/i);
-    const cpf = cpfMatch ? cpfMatch[1] : null;
+    const cpf = linhas[0]?.match(/CPF\s+(\d+)/i)?.[1];
     if (!cpf) continue;
+
+    // Cada "Compra N — ..." do bloco; CPF sem compra não vira ficha.
+    const comprasDoBloco = bloco
+      .split(/(?=^Compra\s+\d+\s*—)/m)
+      .map((b) => b.trim())
+      .filter((b) => b.startsWith("Compra"))
+      .map(lerCompra);
+    if (comprasDoBloco.length === 0) continue;
+    compras += comprasDoBloco.length;
 
     const campo = (label: string): string | null => {
       const linha = linhas.find((l) => l.trim().startsWith(`${label}:`) || l.trim().startsWith(`${label} `));
@@ -89,72 +117,49 @@ export function parseFichas(conteudo: string): RifaImportada[] {
       return linha.slice(idx).replace(/^[:\s]+/, "").trim() || null;
     };
 
-    const nome = campo("Nome") ?? "(sem nome)";
-    const telefoneBruto = campo("Telefone");
     // "(19) 98352-9292 (confirmado 19 9**** 9292)" -> fica só o número real, sem máscara.
-    const telefoneMatch = telefoneBruto?.match(/\(\d{2}\)\s*\d{4,5}-\d{4}/);
-    const telefone = telefoneMatch ? telefoneMatch[0] : null;
-    const idadeTexto = campo("Idade");
-    const idade = idadeTexto ? Number(idadeTexto.match(/\d+/)?.[0]) : null;
-    const profissao = campo("Profissão");
-    const renda = parseValorReais(campo("Renda"));
+    const telefone = campo("Telefone")?.match(/\(\d{2}\)\s*\d{4,5}-\d{4}/)?.[0] ?? null;
+    const idade = Number(campo("Idade")?.match(/\d+/)?.[0]);
 
-    // Cada "Compra N" dentro do bloco vira uma ficha.
-    const blocosCompra = bloco
-      .split(/(?=^Compra\s+\d+\s*—)/m)
-      .map((b) => b.trim())
-      .filter((b) => b.startsWith("Compra"));
+    // A compra mais recente dá pedido/data/pagamento; números e valor são somados.
+    const recente = [...comprasDoBloco].sort((a, b) => (b.comprado_em ?? "").localeCompare(a.comprado_em ?? ""))[0];
+    const deste: FichaImportada = {
+      cpf,
+      nome: campo("Nome") ?? "(sem nome)",
+      telefone,
+      idade: Number.isFinite(idade) ? idade : null,
+      profissao: campo("Profissão"),
+      renda: parseValorReais(campo("Renda")),
+      pedido: recente.pedido,
+      comprado_em: recente.comprado_em,
+      pagamento_status: recente.pagamento_status,
+      pagamento_pago_em: recente.pagamento_pago_em,
+      pagamento_valor: comprasDoBloco.reduce<number | null>((s, c) => somar(s, c.pagamento_valor), null),
+      qtd_numeros: comprasDoBloco.reduce<number | null>((s, c) => somar(s, c.qtd_numeros), null),
+    };
 
-    for (const blocoCompra of blocosCompra) {
-      const linhaCompra = blocoCompra.split(/\r?\n/)[0];
-      const nomeRifa = extrairNomeRifa(linhaCompra);
-      if (!nomeRifa) continue;
-
-      const pedido = extrairPedido(linhaCompra);
-      const premioMatch = blocoCompra.match(/prêmio:\s*(.+)/i);
-      const sorteioMatch = blocoCompra.match(/sorteio:\s*(.+)/i);
-      const compradoMatch = blocoCompra.match(/comprado em:\s*(.+)/i);
-      const pagamentoMatch = blocoCompra.match(/pagamento:\s*(.+)/i);
-      const numerosMatch = blocoCompra.match(/(\d+)\s*número\(s\)/i);
-
-      let pagamentoStatus: string | null = null;
-      let pagamentoValor: number | null = null;
-      let pagamentoPagoEm: string | null = null;
-      if (pagamentoMatch) {
-        const partes = pagamentoMatch[1].split("·").map((p) => p.trim());
-        // "Pix · concluido · R$ 13,80 (pago em 01/07/2026 12:16)"
-        pagamentoStatus = partes[1] ?? null;
-        pagamentoValor = parseValorReais(partes[2]);
-        const pagoEmMatch = pagamentoMatch[1].match(/pago em\s+([\d/: ]+)/i);
-        pagamentoPagoEm = parseDataHoraBr(pagoEmMatch?.[1]);
-      }
-
-      if (!rifasPorNome.has(nomeRifa)) {
-        rifasPorNome.set(nomeRifa, {
-          nome: nomeRifa,
-          premio_descricao: premioMatch ? premioMatch[1].trim() : null,
-          premio_valor: ultimoValorReaisComPrefixo(nomeRifa),
-          data_sorteio: parseDataHoraBr(sorteioMatch?.[1] ?? null),
-          fichas: [],
-        });
-      }
-
-      rifasPorNome.get(nomeRifa)!.fichas.push({
-        cpf,
-        nome,
-        telefone,
-        idade: Number.isFinite(idade) ? idade : null,
-        profissao,
-        renda,
-        pedido,
-        comprado_em: parseDataHoraBr(compradoMatch?.[1] ?? null),
-        pagamento_valor: pagamentoValor,
-        pagamento_status: pagamentoStatus,
-        pagamento_pago_em: pagamentoPagoEm,
-        qtd_numeros: numerosMatch ? Number(numerosMatch[1]) : null,
-      });
+    // O mesmo CPF pode aparecer em mais de um bloco do arquivo.
+    const anterior = porCpf.get(cpf);
+    if (!anterior) {
+      porCpf.set(cpf, deste);
+      continue;
     }
+    const maisRecente = (deste.comprado_em ?? "") > (anterior.comprado_em ?? "") ? deste : anterior;
+    porCpf.set(cpf, {
+      cpf,
+      nome: anterior.nome !== "(sem nome)" ? anterior.nome : deste.nome,
+      telefone: anterior.telefone ?? deste.telefone,
+      idade: anterior.idade ?? deste.idade,
+      profissao: anterior.profissao ?? deste.profissao,
+      renda: anterior.renda ?? deste.renda,
+      pedido: maisRecente.pedido,
+      comprado_em: maisRecente.comprado_em,
+      pagamento_status: maisRecente.pagamento_status,
+      pagamento_pago_em: maisRecente.pagamento_pago_em,
+      pagamento_valor: somar(anterior.pagamento_valor, deste.pagamento_valor),
+      qtd_numeros: somar(anterior.qtd_numeros, deste.qtd_numeros),
+    });
   }
 
-  return Array.from(rifasPorNome.values());
+  return { fichas: Array.from(porCpf.values()), compras };
 }

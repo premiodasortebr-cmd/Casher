@@ -1,13 +1,13 @@
 import Link from "next/link";
-import { CalendarIcon, CaretRightIcon, TicketIcon, UploadSimpleIcon } from "@phosphor-icons/react/dist/ssr";
-import { PageHeader, EmptyState } from "@/components/ui/Layout";
-import { Card } from "@/components/ui/Card";
+import { CaretRightIcon, TicketIcon, UploadSimpleIcon } from "@phosphor-icons/react/dist/ssr";
+import { PageHeader } from "@/components/ui/Layout";
 import { ButtonLink } from "@/components/ui/Button";
 import { StatusBar } from "@/components/ui/Stats";
 import { requireAdminSession } from "@/lib/auth/guard";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { formatBRL, formatDataHora, formatNumero } from "@/lib/format";
+import { formatNumero } from "@/lib/format";
 import type { RifaResumo } from "@/lib/types";
+import { NovaRifaCard } from "./NovaRifaCard";
 
 export default async function RifasPage() {
   await requireAdminSession();
@@ -15,76 +15,89 @@ export default async function RifasPage() {
   const { data: rifas } = await createAdminClient()
     .from("rifas_resumo")
     .select("*")
-    .order("data_sorteio", { ascending: false, nullsFirst: false })
+    .order("nome")
     .returns<RifaResumo[]>();
-
   const lista = rifas ?? [];
 
   return (
     <div className="flex flex-col gap-8">
       <PageHeader
         eyebrow="Rifas"
-        title="Todas as rifas"
-        description="Entre numa rifa pra distribuir fichas entre os ligadores e acompanhar o progresso."
+        title="Suas rifas"
+        description="Cada rifa junta as fichas de todos os arquivos que você subir pra ela. Entre numa rifa pra distribuir entre os ligadores."
         actions={
-          <ButtonLink href="/admin/rifas/importar" icon={<UploadSimpleIcon weight="bold" />}>
-            Importar fichas
-          </ButtonLink>
+          lista.length > 0 && (
+            <ButtonLink href="/admin/rifas/importar" icon={<UploadSimpleIcon weight="bold" />}>
+              Importar fichas
+            </ButtonLink>
+          )
         }
       />
 
-      {lista.length === 0 ? (
-        <Card>
-          <EmptyState
-            icon={<TicketIcon />}
-            title="Nenhuma rifa cadastrada"
-            description="Importe o .txt do checker pra criar as rifas e as fichas."
-            action={
-              <ButtonLink href="/admin/rifas/importar" icon={<UploadSimpleIcon weight="bold" />}>
-                Importar fichas
-              </ButtonLink>
-            }
-          />
-        </Card>
-      ) : (
-        <Card className="divide-y divide-line overflow-hidden">
-          {lista.map((r) => (
-            <Link
-              key={r.id}
-              href={`/admin/rifas/${r.id}`}
-              className="group grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-3 px-5 py-4 transition-colors duration-300 ease-spring hover:bg-white/[0.03] md:grid-cols-[minmax(0,1fr)_14rem_auto]"
-            >
-              <div className="min-w-0">
-                <p className="truncate font-medium text-fg">{r.nome}</p>
-                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-fg-subtle">
-                  {r.premio_valor != null && <span>{formatBRL(r.premio_valor)}</span>}
-                  {r.data_sorteio && (
-                    <span className="inline-flex items-center gap-1">
-                      <CalendarIcon size={13} />
-                      {formatDataHora(r.data_sorteio)}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <div className="col-span-2 flex flex-col gap-1.5 md:col-span-1">
-                <StatusBar contagem={r} altura="h-1.5" />
-                <p className="text-[12px] tabular-nums text-fg-subtle">
-                  <span className="text-fg-muted">{formatNumero(r.total)}</span> fichas ·{" "}
-                  <span className={r.disponiveis > 0 ? "text-accent" : ""}>{formatNumero(r.disponiveis)} disponíveis</span>
-                  {" · "}
-                  {formatNumero(r.pendente - r.disponiveis)} na fila
-                </p>
-              </div>
-
-              <CaretRightIcon
-                size={16}
-                className="col-start-2 row-start-1 text-fg-subtle transition-transform duration-300 ease-spring group-hover:translate-x-0.5 md:col-start-3"
-              />
-            </Link>
-          ))}
-        </Card>
+      {lista.length === 0 && (
+        <p className="-mt-2 text-[14px] text-fg-muted">
+          Comece criando a primeira rifa — depois é só subir o .txt do checker pra ela.
+        </p>
       )}
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {lista.map((r, i) => (
+          <CardRifa key={r.id} rifa={r} indice={i} />
+        ))}
+        <NovaRifaCard inicialAberto={lista.length === 0} />
+      </div>
+    </div>
+  );
+}
+
+function CardRifa({ rifa: r, indice }: { rifa: RifaResumo; indice: number }) {
+  const naFila = r.pendente - r.disponiveis;
+  return (
+    <Link
+      href={`/admin/rifas/${r.id}`}
+      style={{ animationDelay: `${Math.min(indice, 8) * 40}ms` }}
+      className="group flex min-h-[184px] animate-fade-up flex-col justify-between gap-5 rounded-2xl border border-line bg-surface p-5 shadow-bezel transition-[border-color,background-color,transform] duration-300 ease-spring hover:-translate-y-0.5 hover:border-white/15 hover:bg-surface-2"
+    >
+      <div className="flex items-start gap-3">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent">
+          <TicketIcon size={20} weight="fill" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[16px] font-semibold tracking-tight text-fg">{r.nome}</p>
+          <p className="text-[12.5px] tabular-nums text-fg-subtle">
+            {r.total === 0 ? "Nenhuma ficha ainda" : `${formatNumero(r.total)} fichas`}
+          </p>
+        </div>
+        <CaretRightIcon
+          size={16}
+          className="mt-1 shrink-0 text-fg-subtle transition-transform duration-300 ease-spring group-hover:translate-x-0.5 group-hover:text-fg-muted"
+        />
+      </div>
+
+      {r.total === 0 ? (
+        <p className="flex items-center gap-1.5 text-[13px] text-fg-muted">
+          <UploadSimpleIcon size={14} />
+          Suba um .txt pra começar
+        </p>
+      ) : (
+        <div className="flex flex-col gap-3">
+          <StatusBar contagem={r} altura="h-1.5" />
+          <dl className="grid grid-cols-3 gap-2">
+            <Mini label="Disponíveis" valor={r.disponiveis} cor={r.disponiveis > 0 ? "text-accent" : "text-fg-subtle"} />
+            <Mini label="Na fila" valor={naFila} cor={naFila > 0 ? "text-warning" : "text-fg-subtle"} />
+            <Mini label="Deu bom" valor={r.deu_bom} cor="text-fg" />
+          </dl>
+        </div>
+      )}
+    </Link>
+  );
+}
+
+function Mini({ label, valor, cor }: { label: string; valor: number; cor: string }) {
+  return (
+    <div>
+      <dt className="text-[11px] text-fg-subtle">{label}</dt>
+      <dd className={`font-mono text-[17px] font-medium tabular-nums tracking-[-0.02em] ${cor}`}>{formatNumero(valor)}</dd>
     </div>
   );
 }

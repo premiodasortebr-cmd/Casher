@@ -6,6 +6,10 @@ const nextConfig: NextConfig = {
   redirects() {
     return [{ source: "/", destination: "/ligador", permanent: false }];
   },
+  experimental: {
+    // O .txt do checker sobe por server action; o padrão (1 MB) corta arquivos grandes.
+    serverActions: { bodySizeLimit: "25mb" },
+  },
 };
 
 export default nextConfig;
