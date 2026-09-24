@@ -8,6 +8,9 @@ import { excluirRifa, renomearRifa, type EstadoRifa } from "../actions";
 
 export function RifaAcoes({ rifaId, nome, vazia }: { rifaId: string; nome: string; vazia: boolean }) {
   const [editando, setEditando] = useState(false);
+  // Controlado: o React reseta o form depois da action, e o erro "já existe X" tem
+  // que continuar em cima do nome que a pessoa digitou.
+  const [novoNome, setNovoNome] = useState(nome);
   const [estado, formAction, pendente] = useActionState<EstadoRifa, FormData>(async (anterior, dados) => {
     const r = await renomearRifa(anterior, dados);
     if (r.sucesso) setEditando(false);
@@ -23,7 +26,9 @@ export function RifaAcoes({ rifaId, nome, vazia }: { rifaId: string; nome: strin
         <div className="flex gap-2">
           <Input
             name="nome"
-            defaultValue={nome}
+            value={novoNome}
+            onChange={(e) => setNovoNome(e.target.value)}
+            className="min-w-0 flex-1"
             maxLength={60}
             autoFocus
             autoComplete="off"
@@ -54,7 +59,14 @@ export function RifaAcoes({ rifaId, nome, vazia }: { rifaId: string; nome: strin
   return (
     <div className="flex flex-col items-stretch gap-2 md:items-end">
       <div className="flex flex-wrap gap-2">
-        <Button variant="secondary" icon={<PencilSimpleIcon />} onClick={() => setEditando(true)}>
+        <Button
+          variant="secondary"
+          icon={<PencilSimpleIcon />}
+          onClick={() => {
+            setNovoNome(nome);
+            setEditando(true);
+          }}
+        >
           Renomear
         </Button>
         {vazia && (

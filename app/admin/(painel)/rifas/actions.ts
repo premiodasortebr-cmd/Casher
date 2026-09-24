@@ -62,10 +62,20 @@ export async function excluirRifa(rifaId: string): Promise<EstadoRifa> {
   if (!UUID.test(rifaId)) return { erro: "Rifa inválida." };
 
   const supabase = createAdminClient();
-  const { count } = await supabase.from("fichas").select("id", { count: "exact", head: true }).eq("rifa_id", rifaId);
-  if ((count ?? 0) > 0) return { erro: "Essa rifa tem fichas — só dá pra excluir rifa vazia." };
+  const { count, error: erroContagem } = await supabase
+    .from("fichas")
+    .select("id", { count: "exact", head: true })
+    .eq("rifa_id", rifaId);
+  if (erroContagem || count == null) return { erro: "Não consegui conferir as fichas dessa rifa — tente de novo." };
+  if (count > 0) return { erro: "Essa rifa tem fichas — só dá pra excluir rifa vazia." };
 
+  // A FK é ON DELETE RESTRICT (0006): se uma importação gravou fichas entre a contagem
+  // e aqui, o banco recusa em vez de apagar as fichas junto.
   const { error } = await supabase.from("rifas").delete().eq("id", rifaId);
+  // 23001 = restrict_violation (ON DELETE RESTRICT); 23503 = foreign_key_violation.
+  if (error?.code === "23001" || error?.code === "23503") {
+    return { erro: "Essa rifa acabou de receber fichas — só dá pra excluir rifa vazia." };
+  }
   if (error) return { erro: `Erro ao excluir: ${error.message}` };
 
   revalidarRifas();

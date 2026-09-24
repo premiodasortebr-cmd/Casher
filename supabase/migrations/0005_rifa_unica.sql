@@ -18,6 +18,12 @@ declare
   v_base text;
   v_destino uuid;
 begin
+  -- Já rodou (o índice por CPF só nasce no fim desta migration): não junta mais nada —
+  -- depois dela o admin pode criar uma rifa chamada "Edição 10 ..." de propósito.
+  if to_regclass('public.fichas_rifa_cpf_uidx') is not null then
+    return;
+  end if;
+
   for r in
     select id, nome
     from public.rifas

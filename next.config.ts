@@ -9,6 +9,9 @@ const nextConfig: NextConfig = {
   experimental: {
     // O .txt do checker sobe por server action; o padrão (1 MB) corta arquivos grandes.
     serverActions: { bodySizeLimit: "25mb" },
+    // O proxy (proxy.ts casa /admin/*) guarda o corpo até 10 MB por padrão e corta o
+    // resto SEM erro — tem que ser maior que o limite acima + o envelope do multipart.
+    proxyClientMaxBodySize: "26mb",
   },
 };
 

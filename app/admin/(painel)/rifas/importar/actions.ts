@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireAdminSession } from "@/lib/auth/guard";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { parseFichas } from "@/lib/import/parseFichas";
+import { parseFichas, type FichaImportada } from "@/lib/import/parseFichas";
 import { acharRifaPorNome, normalizarNomeRifa, validarNomeRifa } from "@/lib/rifas";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -22,6 +22,28 @@ export type EstadoImport = {
     semTelefone: number;
   };
 };
+
+const COLUNAS_FICHA =
+  "cpf, nome, telefone, idade, profissao, renda, pedido, comprado_em, pagamento_valor, pagamento_status, pagamento_pago_em, qtd_numeros";
+
+/** Campo vazio no arquivo novo mantém o que já estava salvo; campo preenchido atualiza. */
+function completarCom(nova: FichaImportada, salva: FichaImportada | undefined): FichaImportada {
+  if (!salva) return nova;
+  return {
+    cpf: nova.cpf,
+    nome: nova.nome !== "(sem nome)" ? nova.nome : salva.nome,
+    telefone: nova.telefone ?? salva.telefone,
+    idade: nova.idade ?? salva.idade,
+    profissao: nova.profissao ?? salva.profissao,
+    renda: nova.renda ?? salva.renda,
+    pedido: nova.pedido ?? salva.pedido,
+    comprado_em: nova.comprado_em ?? salva.comprado_em,
+    pagamento_valor: nova.pagamento_valor ?? salva.pagamento_valor,
+    pagamento_status: nova.pagamento_status ?? salva.pagamento_status,
+    pagamento_pago_em: nova.pagamento_pago_em ?? salva.pagamento_pago_em,
+    qtd_numeros: nova.qtd_numeros ?? salva.qtd_numeros,
+  };
+}
 
 function lotes<T>(itens: T[], tamanho: number): T[][] {
   const out: T[][] = [];
@@ -66,21 +88,25 @@ export async function importarFichas(_estado: EstadoImport, formData: FormData):
     }
   }
 
-  // Quantas já existiam nessa rifa (pra dizer "X novas, Y atualizadas").
-  let atualizadas = 0;
+  // O que já existe nessa rifa: conta as "atualizadas" e serve de base pra não apagar
+  // dado bom (ex.: telefone) quando o arquivo novo vem sem ele.
+  const existentes = new Map<string, FichaImportada>();
   for (const lote of lotes(fichas.map((f) => f.cpf), LOTE_CONSULTA)) {
-    const { count, error } = await supabase
+    const { data, error } = await supabase
       .from("fichas")
-      .select("id", { count: "exact", head: true })
+      .select(COLUNAS_FICHA)
       .eq("rifa_id", rifa.id)
-      .in("cpf", lote);
+      .in("cpf", lote)
+      .returns<FichaImportada[]>();
     if (error) return { erro: `Erro ao conferir fichas existentes: ${error.message}` };
-    atualizadas += count ?? 0;
+    for (const e of data ?? []) existentes.set(e.cpf, e);
   }
+  const atualizadas = existentes.size;
+  const completas = fichas.map((f) => completarCom(f, existentes.get(f.cpf)));
 
   // Upsert por (rifa_id, cpf): atualiza nome/telefone/compra e NÃO mexe no status.
   let gravadas = 0;
-  for (const lote of lotes(fichas, LOTE_UPSERT)) {
+  for (const lote of lotes(completas, LOTE_UPSERT)) {
     const { error } = await supabase
       .from("fichas")
       .upsert(lote.map((f) => ({ ...f, rifa_id: rifa.id })), { onConflict: "rifa_id,cpf" });
@@ -109,7 +135,7 @@ export async function importarFichas(_estado: EstadoImport, formData: FormData):
       novas: fichas.length - atualizadas,
       atualizadas,
       compras,
-      semTelefone: fichas.filter((f) => !f.telefone).length,
+      semTelefone: completas.filter((f) => !f.telefone).length,
     },
   };
 }

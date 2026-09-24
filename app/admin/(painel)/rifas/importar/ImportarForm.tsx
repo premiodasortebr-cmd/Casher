@@ -21,6 +21,9 @@ import { formatNumero } from "@/lib/format";
 import { parseFichas } from "@/lib/import/parseFichas";
 import { importarFichas, type EstadoImport } from "./actions";
 
+// Abaixo dos 25 MB do bodySizeLimit (next.config.ts), com folga pro envelope do multipart.
+const TAMANHO_MAXIMO = 24 * 1024 * 1024;
+
 type RifaOpcao = { id: string; nome: string; total: number };
 type Previa = { nome: string; tamanho: number; fichas: number; compras: number; semTelefone: number };
 
@@ -46,16 +49,33 @@ function Formulario({
   rifaInicial: string;
   onNovo: () => void;
 }) {
-  const [estado, formAction, pendente] = useActionState<EstadoImport, FormData>(importarFichas, {});
+  // O React 19 reseta o <form> depois de toda action (inclusive com erro) e o input de
+  // arquivo volta vazio — o File fica guardado aqui pra "tentar de novo" funcionar.
+  const arquivoAtual = useRef<File | null>(null);
+  const [estado, formAction, pendente] = useActionState<EstadoImport, FormData>((anterior, dados) => {
+    if (arquivoAtual.current) dados.set("arquivo", arquivoAtual.current);
+    return importarFichas(anterior, dados);
+  }, {});
   const [rifaSel, setRifaSel] = useState(rifaInicial || (rifas.length === 0 ? "nova" : ""));
   const [novaNome, setNovaNome] = useState("");
   const [previa, setPrevia] = useState<Previa | null>(null);
+  const [erroArquivo, setErroArquivo] = useState<string | null>(null);
   const [lendo, setLendo] = useState(false);
   const [arrastando, setArrastando] = useState(false);
   const inputArquivo = useRef<HTMLInputElement>(null);
 
   async function lerArquivo(arquivo: File | undefined) {
     if (!arquivo) return;
+    if (arquivo.size > TAMANHO_MAXIMO) {
+      arquivoAtual.current = null;
+      setPrevia(null);
+      setErroArquivo(
+        `Arquivo de ${formatNumero(Math.round(arquivo.size / 1024 / 1024))} MB — o limite é 24 MB. Divida o .txt em partes e importe uma de cada vez (não duplica).`,
+      );
+      return;
+    }
+    arquivoAtual.current = arquivo;
+    setErroArquivo(null);
     setLendo(true);
     try {
       const { fichas, compras } = parseFichas(await arquivo.text());
@@ -158,9 +178,7 @@ function Formulario({
             <input
               ref={inputArquivo}
               type="file"
-              name="arquivo"
               accept=".txt,text/plain"
-              required
               className="sr-only"
               onChange={(e) => void lerArquivo(e.target.files?.[0])}
             />
@@ -187,6 +205,8 @@ function Formulario({
               </>
             )}
           </label>
+
+          {erroArquivo && <Alert icon={<WarningCircleIcon weight="fill" />}>{erroArquivo}</Alert>}
 
           {previa && previa.fichas === 0 && (
             <Alert icon={<WarningCircleIcon weight="fill" />}>
@@ -219,13 +239,15 @@ function Formulario({
         disabled={pendente || lendo || !rifaOk || !arquivoOk}
         icon={<PaperPlaneTiltIcon weight="fill" />}
       >
-        {pendente
-          ? "Importando…"
-          : !rifaOk
-            ? "Escolha a rifa"
-            : !arquivoOk
-              ? "Escolha o arquivo"
-              : `Importar ${formatNumero(previa!.fichas)} ficha(s) em ${nomeDestino}`}
+        <span className="min-w-0 truncate">
+          {pendente
+            ? "Importando…"
+            : !rifaOk
+              ? "Escolha a rifa"
+              : !arquivoOk
+                ? "Escolha o arquivo"
+                : `Importar ${formatNumero(previa!.fichas)} ficha(s) em ${nomeDestino}`}
+        </span>
       </Button>
     </form>
   );
@@ -283,10 +305,10 @@ function OpcaoRifa({
 
 function Numero({ label, valor, destaque, alerta }: { label: string; valor: number; destaque?: boolean; alerta?: boolean }) {
   return (
-    <div className="rounded-xl border border-line bg-surface-2 px-3.5 py-3">
-      <p className="text-[11.5px] text-fg-subtle">{label}</p>
+    <div className="flex min-w-0 flex-col justify-between rounded-xl border border-line bg-surface-2 px-3 py-3 sm:px-3.5">
+      <p className="text-[11.5px] leading-tight text-fg-subtle">{label}</p>
       <p
-        className={`mt-1 font-mono text-[22px] font-medium leading-none tracking-[-0.03em] tabular-nums ${
+        className={`mt-1.5 truncate font-mono text-[18px] font-medium leading-none tracking-[-0.03em] tabular-nums sm:text-[22px] ${
           destaque ? "text-accent" : alerta ? "text-warning" : "text-fg"
         }`}
       >
