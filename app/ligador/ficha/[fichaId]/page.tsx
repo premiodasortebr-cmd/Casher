@@ -4,7 +4,9 @@ import {
   ArrowLeftIcon,
   BriefcaseIcon,
   CakeIcon,
+  CalendarIcon,
   CurrencyDollarIcon,
+  MapPinIcon,
   IdentificationCardIcon,
   PhoneIcon,
   ReceiptIcon,
@@ -143,6 +145,16 @@ export default async function FichaPage({ params }: { params: Promise<{ fichaId:
             <Dado icon={<CurrencyDollarIcon />} label="Renda" mono>
               {formatBRL(ficha.renda)}
             </Dado>
+            {ficha.cidade && (
+              <Dado icon={<MapPinIcon />} label="Cidade">
+                {ficha.cidade}
+              </Dado>
+            )}
+            {ficha.nascimento && (
+              <Dado icon={<CalendarIcon />} label="Nascimento" mono>
+                {ficha.nascimento.split("-").reverse().join("/")}
+              </Dado>
+            )}
             <Dado icon={<ReceiptIcon />} label="Comprou" mono>
               {compras.length > 0 || totalNumeros != null
                 ? `${formatNumero(totalNumeros ?? 0)} número${totalNumeros === 1 ? "" : "s"} · ${formatBRL(totalPago)}`

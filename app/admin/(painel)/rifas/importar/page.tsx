@@ -25,7 +25,7 @@ export default async function ImportarFichasPage({ searchParams }: { searchParam
       <PageHeader
         eyebrow="Rifas"
         title="Importar fichas"
-        description="Escolha a rifa e suba o .txt do checker. Tudo que estiver no arquivo entra nessa rifa — uma ficha por pessoa. Reimportar atualiza, não duplica."
+        description="Escolha o tipo de arquivo, a rifa e suba o arquivo. Tudo que estiver nele entra nessa rifa — uma ficha por pessoa. Reimportar atualiza, não duplica."
         back={
           <ButtonLink href="/admin/rifas" variant="ghost" size="sm" icon={<ArrowLeftIcon />}>
             Rifas

@@ -18,7 +18,7 @@ import { Button, ButtonLink } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Layout";
 import { Badge } from "@/components/ui/Badge";
 import { formatNumero } from "@/lib/format";
-import { parseFichas } from "@/lib/import/parseFichas";
+import { FORMATOS, type Formato } from "@/lib/import/formatos";
 import { importarFichas, type EstadoImport } from "./actions";
 
 // Abaixo dos 25 MB do bodySizeLimit (next.config.ts), com folga pro envelope do multipart.
@@ -56,6 +56,8 @@ function Formulario({
     if (arquivoAtual.current) dados.set("arquivo", arquivoAtual.current);
     return importarFichas(anterior, dados);
   }, {});
+  const [formato, setFormato] = useState<Formato>("checker");
+  const fmt = FORMATOS[formato];
   const [rifaSel, setRifaSel] = useState(rifaInicial || (rifas.length === 0 ? "nova" : ""));
   const [novaNome, setNovaNome] = useState("");
   const [previa, setPrevia] = useState<Previa | null>(null);
@@ -70,7 +72,7 @@ function Formulario({
       arquivoAtual.current = null;
       setPrevia(null);
       setErroArquivo(
-        `Arquivo de ${formatNumero(Math.round(arquivo.size / 1024 / 1024))} MB — o limite é 24 MB. Divida o .txt em partes e importe uma de cada vez (não duplica).`,
+        `Arquivo de ${formatNumero(Math.round(arquivo.size / 1024 / 1024))} MB — o limite é 24 MB. Divida o arquivo em partes e importe uma de cada vez (não duplica).`,
       );
       return;
     }
@@ -78,7 +80,7 @@ function Formulario({
     setErroArquivo(null);
     setLendo(true);
     try {
-      const { fichas, compras } = parseFichas(await arquivo.text());
+      const { fichas, compras } = fmt.ler(await arquivo.text());
       setPrevia({
         nome: arquivo.name,
         tamanho: arquivo.size,
@@ -110,6 +112,35 @@ function Formulario({
   return (
     <form action={formAction} className="flex flex-col gap-4">
       <input type="hidden" name="rifaId" value={rifaSel} />
+      <input type="hidden" name="formato" value={formato} />
+
+      <div role="tablist" aria-label="Tipo de arquivo" className="grid grid-cols-2 gap-1 rounded-2xl border border-line bg-surface p-1">
+        {(Object.keys(FORMATOS) as Formato[]).map((chave) => {
+          const on = chave === formato;
+          return (
+            <button
+              key={chave}
+              type="button"
+              role="tab"
+              aria-selected={on}
+              onClick={() => {
+                if (on) return;
+                setFormato(chave);
+                setPrevia(null);
+                setErroArquivo(null);
+                arquivoAtual.current = null;
+                if (inputArquivo.current) inputArquivo.current.value = "";
+              }}
+              className={`flex flex-col items-center rounded-xl px-3 py-2.5 text-center transition-colors duration-300 ease-spring ${
+                on ? "bg-accent-soft text-accent shadow-[inset_0_0_0_1px_rgb(63_200_115/0.35)]" : "text-fg-muted hover:bg-white/[0.03] hover:text-fg"
+              }`}
+            >
+              <span className="text-[14px] font-medium">{FORMATOS[chave].rotulo}</span>
+              <span className={`text-[11.5px] ${on ? "text-accent/80" : "text-fg-subtle"}`}>{FORMATOS[chave].arquivo}</span>
+            </button>
+          );
+        })}
+      </div>
 
       <Card>
         <CardHeader title={<Passo n={1} ok={rifaOk}>Rifa</Passo>} description="Pra onde vão as fichas deste arquivo" />
@@ -157,7 +188,7 @@ function Formulario({
       <Card>
         <CardHeader
           title={<Passo n={2} ok={arquivoOk}>Arquivo</Passo>}
-          description="O .txt exportado pelo checker"
+          description={fmt.arquivo}
         />
         <div className="flex flex-col gap-4 p-5">
           <label
@@ -178,7 +209,7 @@ function Formulario({
             <input
               ref={inputArquivo}
               type="file"
-              accept=".txt,text/plain"
+              accept={fmt.extensoes}
               className="sr-only"
               onChange={(e) => void lerArquivo(e.target.files?.[0])}
             />
@@ -199,7 +230,7 @@ function Formulario({
                   <UploadSimpleIcon size={22} weight="bold" />
                 </span>
                 <span className="text-[14px] font-medium text-fg">
-                  {lendo ? "Lendo o arquivo…" : "Arraste o .txt aqui ou clique pra escolher"}
+                  {lendo ? "Lendo o arquivo…" : fmt.dica}
                 </span>
                 <span className="text-[12.5px] text-fg-subtle">Nada é salvo até você confirmar.</span>
               </>
@@ -210,15 +241,18 @@ function Formulario({
 
           {previa && previa.fichas === 0 && (
             <Alert icon={<WarningCircleIcon weight="fill" />}>
-              Não achei nenhuma ficha nesse arquivo. Confira se é o .txt do checker (blocos &quot;=== CPF … ===&quot; com
-              &quot;Compra N&quot; dentro).
+              Não achei nenhuma ficha nesse arquivo. Confira se é o {fmt.arquivo}: {fmt.descricao}
             </Alert>
           )}
 
           {previa && previa.fichas > 0 && (
             <div className="grid animate-fade-in grid-cols-3 gap-2">
               <Numero label="Fichas" valor={previa.fichas} destaque />
-              <Numero label="Compras no arquivo" valor={previa.compras} />
+              {formato === "checker" ? (
+                <Numero label="Compras no arquivo" valor={previa.compras} />
+              ) : (
+                <Numero label="Linhas com CPF" valor={previa.fichas} />
+              )}
               <Numero label="Sem telefone" valor={previa.semTelefone} alerta={previa.semTelefone > 0} />
               {previa.compras > previa.fichas && (
                 <p className="col-span-3 text-[12.5px] text-fg-subtle">

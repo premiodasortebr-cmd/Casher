@@ -47,6 +47,8 @@ export interface Ficha {
   telefone_confirmado: boolean;
   /** Todas as compras do .txt, mais recente primeiro (jsonb). */
   compras: Compra[];
+  cidade: string | null;
+  nascimento: string | null;
 }
 
 /** view rifas_resumo */
@@ -91,6 +93,7 @@ export interface FichaLista {
   qtd_numeros?: number | null;
   pagamento_valor?: number | null;
   qtd_compras?: number;
+  cidade?: string | null;
 }
 
 /** view rifa_ligadores_resumo */

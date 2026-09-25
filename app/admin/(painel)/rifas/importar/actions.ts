@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { requireAdminSession } from "@/lib/auth/guard";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { juntarCompras, parseFichas, resumoCompras, type FichaImportada } from "@/lib/import/parseFichas";
+import { juntarCompras, resumoCompras, type FichaImportada } from "@/lib/import/parseFichas";
+import { ehFormato, FORMATOS } from "@/lib/import/formatos";
 import { acharRifaPorNome, normalizarNomeRifa, validarNomeRifa } from "@/lib/rifas";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -24,7 +25,7 @@ export type EstadoImport = {
 };
 
 const COLUNAS_FICHA =
-  "cpf, nome, telefone, telefone_confirmado, idade, profissao, renda, pedido, comprado_em, pagamento_valor, pagamento_status, pagamento_pago_em, qtd_numeros, compras";
+  "cpf, nome, telefone, telefone_confirmado, idade, profissao, renda, cidade, nascimento, pedido, comprado_em, pagamento_valor, pagamento_status, pagamento_pago_em, qtd_numeros, compras";
 
 /**
  * Campo vazio no arquivo novo mantém o que já estava salvo; campo preenchido
@@ -41,6 +42,8 @@ function completarCom(nova: FichaImportada, salva: FichaImportada | undefined): 
     idade: nova.idade ?? salva.idade,
     profissao: nova.profissao ?? salva.profissao,
     renda: nova.renda ?? salva.renda,
+    cidade: nova.cidade ?? salva.cidade ?? null,
+    nascimento: nova.nascimento ?? salva.nascimento ?? null,
     compras,
     ...resumoCompras(compras),
   };
@@ -57,12 +60,16 @@ export async function importarFichas(_estado: EstadoImport, formData: FormData):
   await requireAdminSession();
   const supabase = createAdminClient();
 
-  const arquivo = formData.get("arquivo");
-  if (!(arquivo instanceof File) || arquivo.size === 0) return { erro: "Selecione o arquivo .txt do checker." };
+  const formatoBruto = String(formData.get("formato") ?? "");
+  if (!ehFormato(formatoBruto)) return { erro: "Escolha o tipo de arquivo (aba de cima)." };
+  const formato = FORMATOS[formatoBruto];
 
-  const { fichas, compras } = parseFichas(await arquivo.text());
+  const arquivo = formData.get("arquivo");
+  if (!(arquivo instanceof File) || arquivo.size === 0) return { erro: `Selecione o ${formato.arquivo}.` };
+
+  const { fichas, compras } = formato.ler(await arquivo.text());
   if (fichas.length === 0) {
-    return { erro: "Não encontrei nenhuma ficha nesse arquivo. Confira se é o .txt exportado pelo checker." };
+    return { erro: `Não encontrei nenhuma ficha nesse arquivo. Confira se é o ${formato.arquivo} (${formato.descricao})` };
   }
 
   // Rifa: uma existente (rifaId) ou uma nova pelo nome (reaproveita se o nome já existe).
