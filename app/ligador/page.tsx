@@ -17,7 +17,7 @@ import { STATUS_RESOLVIDOS, type FichaLista, type LigadorResumo } from "@/lib/ty
 
 type Aba = "fila" | "retornar" | "historico";
 import { FichaCard } from "./FichaCard";
-import { TransmissaoCard } from "./Transmissao";
+import { TransmissaoGate } from "./TransmissaoGate";
 
 const BASE = "/ligador";
 const POR_PAGINA = 20;
@@ -109,9 +109,7 @@ export default async function LigadorHomePage({ searchParams }: { searchParams: 
       </header>
 
       <main className="mx-auto flex max-w-2xl flex-col gap-5 px-4 py-6 sm:px-6">
-        <div className="animate-fade-up">
-          <TransmissaoCard ligadorId={sessao.ligadorId} />
-        </div>
+        <TransmissaoGate ligadorId={sessao.ligadorId}>
 
         <Card className="animate-fade-up [animation-delay:40ms] px-5 py-4">
           <div className="flex items-end justify-between gap-3">
@@ -191,6 +189,7 @@ export default async function LigadorHomePage({ searchParams }: { searchParams: 
             <Pagination pagina={pagina} porPagina={POR_PAGINA} total={total} href={(p) => montarQuery(BASE, filtros, { pagina: p })} />
           </Card>
         )}
+        </TransmissaoGate>
       </main>
     </div>
   );

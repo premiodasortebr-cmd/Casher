@@ -31,7 +31,7 @@ export function Textarea({ className, ...rest }: ComponentProps<"textarea">) {
 export function Select({ className, children, ...rest }: ComponentProps<"select">) {
   return (
     <select
-      className={`${campo} h-11 appearance-none bg-[url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20256%20256'%20fill='%235b6478'%3E%3Cpath%20d='M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z'/%3E%3C/svg%3E")] bg-[length:14px] bg-[right_0.9rem_center] bg-no-repeat pl-3.5 pr-9 ${className ?? ""}`}
+      className={`${campo} h-11 appearance-none bg-[url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20256%20256'%20fill='%235b6478'%3E%3Cpath%20d='M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z'/%3E%3C/svg%3E")] bg-[length:14px] bg-[right_0.9rem_center] bg-no-repeat pl-3.5 pr-9 [&_option]:bg-[#111] [&_option]:text-[#f0f2f5] ${className ?? ""}`}
       {...rest}
     >
       {children}

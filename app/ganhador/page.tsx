@@ -162,6 +162,22 @@ function Celebracao({ dados, onVoltar }: { dados: DadosGanhador; onVoltar: () =>
   const [copiado, setCopiado] = useState(false);
 
   const [dadosAtuais, setDadosAtuais] = useState(dados);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    const premio = dadosAtuais.premio;
+    if (!premio?.pix_chave || premio.estado === "liberado") return;
+    pollingRef.current = setInterval(async () => {
+      const res = await consultarCpf(dadosAtuais.cpf.replace(/\D/g, ""));
+      if (res.ok && res.dados.premio) {
+        setDadosAtuais((prev) => ({ ...prev, premio: res.dados.premio }));
+        if (res.dados.premio.estado === "liberado") {
+          if (pollingRef.current) clearInterval(pollingRef.current);
+        }
+      }
+    }, 3000);
+    return () => { if (pollingRef.current) clearInterval(pollingRef.current); };
+  }, [dadosAtuais.premio?.estado, dadosAtuais.premio?.pix_chave, dadosAtuais.cpf]);
 
   const valorPremio = dadosAtuais.premio?.valor ?? 0;
 
@@ -403,9 +419,20 @@ function ModalPix({
   onSalvo: (tipo: string, chave: string) => void;
 }) {
   const [tipo, setTipo] = useState("cpf");
-  const [chave, setChave] = useState("");
+  const [chave, setChave] = useState(maskCpf(cpf));
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState("");
+
+  function maskChave(v: string, t: string) {
+    if (t === "cpf") return maskCpf(v);
+    if (t === "telefone") {
+      const d = v.replace(/\D/g, "").slice(0, 11);
+      if (d.length <= 2) return d;
+      if (d.length <= 7) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
+      return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+    }
+    return v;
+  }
 
   async function salvar(e: React.FormEvent) {
     e.preventDefault();
@@ -427,8 +454,8 @@ function ModalPix({
             <label className="mb-1.5 block text-xs font-medium text-fg-muted">Tipo da chave</label>
             <select
               value={tipo}
-              onChange={(e) => setTipo(e.target.value)}
-              className="h-11 w-full appearance-none rounded-xl border border-line-strong bg-surface-2 px-3.5 text-sm text-fg outline-none transition-all duration-300 focus:border-accent/60"
+              onChange={(e) => { const t = e.target.value; setTipo(t); setChave(t === "cpf" ? maskCpf(cpf) : ""); }}
+              className="h-11 w-full appearance-none rounded-xl border border-line-strong bg-surface-2 px-3.5 text-sm text-fg outline-none transition-all duration-300 focus:border-accent/60 [&_option]:bg-[#111] [&_option]:text-[#f0f2f5]"
             >
               <option value="cpf">CPF</option>
               <option value="telefone">Telefone</option>
@@ -441,7 +468,7 @@ function ModalPix({
             <input
               type="text"
               value={chave}
-              onChange={(e) => setChave(e.target.value)}
+              onChange={(e) => setChave(maskChave(e.target.value, tipo))}
               placeholder={
                 tipo === "cpf" ? "000.000.000-00"
                 : tipo === "telefone" ? "(00) 00000-0000"

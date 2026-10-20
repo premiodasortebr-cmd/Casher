@@ -15,7 +15,7 @@ import {
   iniciarTransmissaoLigador,
 } from "@/lib/transmissao";
 
-export function TransmissaoCard({ ligadorId }: { ligadorId: string }) {
+export function TransmissaoCard({ ligadorId, onMudou }: { ligadorId: string; onMudou?: (t: boolean) => void }) {
   const [transmitindo, setTransmitindo] = useState(false);
   const [conectado, setConectado] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -47,6 +47,10 @@ export function TransmissaoCard({ ligadorId }: { ligadorId: string }) {
     setTransmitindo(false);
     setConectado(false);
   }, []);
+
+  useEffect(() => {
+    onMudou?.(transmitindo);
+  }, [transmitindo, onMudou]);
 
   useEffect(() => {
     return () => { pararRef.current?.(); };
