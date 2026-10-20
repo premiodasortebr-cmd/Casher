@@ -17,6 +17,7 @@ import { STATUS_RESOLVIDOS, type FichaLista, type LigadorResumo } from "@/lib/ty
 
 type Aba = "fila" | "retornar" | "historico";
 import { FichaCard } from "./FichaCard";
+import { TransmissaoCard } from "./Transmissao";
 
 const BASE = "/ligador";
 const POR_PAGINA = 20;
@@ -108,7 +109,11 @@ export default async function LigadorHomePage({ searchParams }: { searchParams: 
       </header>
 
       <main className="mx-auto flex max-w-2xl flex-col gap-5 px-4 py-6 sm:px-6">
-        <Card className="animate-fade-up px-5 py-4">
+        <div className="animate-fade-up">
+          <TransmissaoCard ligadorId={sessao.ligadorId} />
+        </div>
+
+        <Card className="animate-fade-up [animation-delay:40ms] px-5 py-4">
           <div className="flex items-end justify-between gap-3">
             <div>
               <p className="text-[12px] font-medium uppercase tracking-[0.14em] text-fg-subtle">Sua fila</p>

@@ -1,0 +1,476 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Logo } from "@/components/ui/Logo";
+import { consultarCpf, enviarPixChave, type DadosGanhador } from "./actions";
+import confetti from "canvas-confetti";
+
+type Estagio = "form" | "carregando" | "resultado" | "erro";
+
+function maskCpf(v: string) {
+  const d = v.replace(/\D/g, "").slice(0, 11);
+  if (d.length <= 3) return d;
+  if (d.length <= 6) return `${d.slice(0, 3)}.${d.slice(3)}`;
+  if (d.length <= 9) return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}`;
+  return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
+}
+
+export default function GanhadorPage() {
+  const [estagio, setEstagio] = useState<Estagio>("form");
+  const [cpf, setCpf] = useState("");
+  const [erro, setErro] = useState("");
+  const [dados, setDados] = useState<DadosGanhador | null>(null);
+  const [progresso, setProgresso] = useState(0);
+
+  async function consultar(e: React.FormEvent) {
+    e.preventDefault();
+    const raw = cpf.replace(/\D/g, "");
+    if (raw.length !== 11) { setErro("Digite um CPF válido com 11 dígitos."); return; }
+
+    setErro("");
+    setEstagio("carregando");
+    setProgresso(0);
+
+    const intervalo = setInterval(() => {
+      setProgresso((p) => Math.min(p + Math.random() * 15, 90));
+    }, 200);
+
+    const resultado = await consultarCpf(raw);
+
+    clearInterval(intervalo);
+    setProgresso(100);
+
+    await new Promise((r) => setTimeout(r, 400));
+
+    if (!resultado.ok) {
+      setErro(resultado.erro);
+      setEstagio("erro");
+      return;
+    }
+
+    setDados(resultado.dados);
+    setEstagio("resultado");
+  }
+
+  function voltar() {
+    setEstagio("form");
+    setCpf("");
+    setErro("");
+    setDados(null);
+    setProgresso(0);
+  }
+
+  return (
+    <div className="flex min-h-[100dvh] flex-col bg-canvas">
+      <header className="flex justify-center px-4 pt-6 pb-2">
+        <Logo compact />
+      </header>
+
+      <main className="flex flex-1 flex-col items-center justify-center px-4 pb-12">
+        {estagio === "form" && (
+          <FormCpf cpf={cpf} setCpf={setCpf} erro={erro} onSubmit={consultar} />
+        )}
+        {estagio === "carregando" && <BarraProgresso progresso={progresso} />}
+        {estagio === "erro" && <TelaErro erro={erro} onVoltar={voltar} />}
+        {estagio === "resultado" && dados && (
+          <Celebracao dados={dados} onVoltar={voltar} />
+        )}
+      </main>
+    </div>
+  );
+}
+
+function FormCpf({
+  cpf, setCpf, erro, onSubmit,
+}: {
+  cpf: string;
+  setCpf: (v: string) => void;
+  erro: string;
+  onSubmit: (e: React.FormEvent) => void;
+}) {
+  return (
+    <form onSubmit={onSubmit} className="flex w-full max-w-sm animate-fade-up flex-col items-center gap-6">
+      <div className="text-center">
+        <h1 className="text-2xl font-bold tracking-tight text-fg">Consultar Prêmio</h1>
+        <p className="mt-2 text-sm text-fg-muted">Digite seu CPF para verificar se você foi contemplado.</p>
+      </div>
+      <div className="w-full">
+        <input
+          type="text"
+          inputMode="numeric"
+          placeholder="000.000.000-00"
+          value={cpf}
+          onChange={(e) => setCpf(maskCpf(e.target.value))}
+          className="h-14 w-full rounded-2xl border border-line-strong bg-surface-2 px-5 text-center text-lg tracking-wider text-fg shadow-[inset_0_1px_2px_0_rgb(0_0_0/0.35)] placeholder:text-fg-subtle outline-none transition-all duration-300 focus:border-accent/60 focus:shadow-[0_0_0_4px_rgb(63_200_115/0.15)]"
+          autoFocus
+        />
+        {erro && <p className="mt-2 text-center text-sm text-danger">{erro}</p>}
+      </div>
+      <button
+        type="submit"
+        className="h-12 w-full rounded-full bg-accent text-base font-semibold text-accent-fg shadow-[inset_0_1px_0_0_rgb(255_255_255/0.35)] transition-all duration-300 hover:bg-accent-strong hover:shadow-accent active:scale-[0.97]"
+      >
+        Consultar
+      </button>
+    </form>
+  );
+}
+
+function BarraProgresso({ progresso }: { progresso: number }) {
+  return (
+    <div className="flex w-full max-w-sm animate-fade-in flex-col items-center gap-6">
+      <div className="flex flex-col items-center gap-3">
+        <div className="size-10 animate-spin rounded-full border-2 border-accent/30 border-t-accent" />
+        <p className="text-sm text-fg-muted">Verificando seu CPF...</p>
+      </div>
+      <div className="h-2 w-full overflow-hidden rounded-full bg-surface-3">
+        <div
+          className="h-full rounded-full bg-accent transition-all duration-500 ease-out"
+          style={{ width: `${progresso}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function TelaErro({ erro, onVoltar }: { erro: string; onVoltar: () => void }) {
+  return (
+    <div className="flex w-full max-w-sm animate-fade-up flex-col items-center gap-6 text-center">
+      <div className="flex size-16 items-center justify-center rounded-full bg-danger-soft text-3xl">
+        😔
+      </div>
+      <div>
+        <h2 className="text-xl font-bold text-fg">Não encontrado</h2>
+        <p className="mt-2 text-sm text-fg-muted">{erro}</p>
+      </div>
+      <button
+        type="button"
+        onClick={onVoltar}
+        className="h-11 w-full rounded-full border border-line-strong bg-surface-2 text-sm font-medium text-fg shadow-bezel transition-all duration-300 hover:bg-surface-3 active:scale-[0.97]"
+      >
+        Tentar outro CPF
+      </button>
+    </div>
+  );
+}
+
+function Celebracao({ dados, onVoltar }: { dados: DadosGanhador; onVoltar: () => void }) {
+  const [etapa, setEtapa] = useState(0);
+  const confettiDisparado = useRef(false);
+  const [contadorValor, setContadorValor] = useState(0);
+  const [pixModal, setPixModal] = useState(false);
+  const [copiado, setCopiado] = useState(false);
+
+  const [dadosAtuais, setDadosAtuais] = useState(dados);
+
+  const valorPremio = dadosAtuais.premio?.valor ?? 0;
+
+  const dispararConfetti = useCallback(() => {
+    if (confettiDisparado.current) return;
+    confettiDisparado.current = true;
+    const end = Date.now() + 4000;
+    const cores = ["#3fc873", "#5fd989", "#eec26a", "#ffffff"];
+    (function frame() {
+      confetti({
+        particleCount: 3,
+        angle: 60,
+        spread: 55,
+        origin: { x: 0, y: 0.7 },
+        colors: cores,
+      });
+      confetti({
+        particleCount: 3,
+        angle: 120,
+        spread: 55,
+        origin: { x: 1, y: 0.7 },
+        colors: cores,
+      });
+      if (Date.now() < end) requestAnimationFrame(frame);
+    })();
+  }, []);
+
+  useEffect(() => {
+    const timers = [
+      setTimeout(() => { setEtapa(1); dispararConfetti(); }, 300),
+      setTimeout(() => setEtapa(2), 1200),
+      setTimeout(() => setEtapa(3), 2000),
+      setTimeout(() => setEtapa(4), 2800),
+      setTimeout(() => setEtapa(5), 3600),
+    ];
+    return () => timers.forEach(clearTimeout);
+  }, [dispararConfetti]);
+
+  useEffect(() => {
+    if (etapa < 5 || !valorPremio) return;
+    let frame: number;
+    const inicio = performance.now();
+    const duracao = 1500;
+    function animar(agora: number) {
+      const t = Math.min((agora - inicio) / duracao, 1);
+      const ease = 1 - Math.pow(1 - t, 3);
+      setContadorValor(Math.round(ease * valorPremio * 100) / 100);
+      if (t < 1) frame = requestAnimationFrame(animar);
+    }
+    frame = requestAnimationFrame(animar);
+    return () => cancelAnimationFrame(frame);
+  }, [etapa, valorPremio]);
+
+  function formatarValor(v: number) {
+    return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  }
+
+  function formatCpfExibir(cpf: string) {
+    const d = cpf.replace(/\D/g, "");
+    return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
+  }
+
+  async function copiarCodigo() {
+    const codigo = dadosAtuais.premio?.codigo;
+    if (!codigo) return;
+    try {
+      await navigator.clipboard.writeText(codigo);
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2000);
+    } catch { /* clipboard blocked */ }
+  }
+
+  const premio = dadosAtuais.premio;
+  const temCodigo = premio?.codigo;
+  const liberado = premio?.estado === "liberado" || premio?.estado === "pagamento_parcial";
+  const temPix = premio?.pix_chave;
+
+  return (
+    <div className="flex w-full max-w-md flex-col items-center gap-4 pb-8">
+      {/* Trophy */}
+      {etapa >= 1 && (
+        <div className="animate-fade-up text-center">
+          <div className="mb-2 text-6xl" style={{ animation: "bounce-trophy 0.6s ease-out" }}>
+            🏆
+          </div>
+          <h1 className="text-3xl font-bold tracking-tight text-accent">Parabéns!</h1>
+          <p className="mt-1 text-sm text-fg-muted">Você foi contemplado!</p>
+        </div>
+      )}
+
+      {/* Dados do ganhador */}
+      {etapa >= 2 && (
+        <div className="w-full animate-fade-up rounded-2xl border border-accent-line bg-accent-soft/50 p-5">
+          <p className="mb-3 text-xs font-medium uppercase tracking-[0.14em] text-accent">
+            Dados confirmados do ganhador
+          </p>
+          <div className="space-y-2 text-sm">
+            <InfoRow label="Nome" value={dadosAtuais.nome} />
+            <InfoRow label="CPF" value={formatCpfExibir(dadosAtuais.cpf)} />
+            {dadosAtuais.nascimento && <InfoRow label="Nascimento" value={formatDataBr(dadosAtuais.nascimento)} />}
+            {dadosAtuais.cidade && <InfoRow label="Cidade" value={dadosAtuais.cidade} />}
+          </div>
+        </div>
+      )}
+
+      {/* Bilhete premiado — código */}
+      {etapa >= 3 && temCodigo && (
+        <div className="w-full animate-fade-up rounded-2xl border border-line bg-surface p-5 text-center">
+          <p className="mb-3 text-xs font-medium uppercase tracking-[0.14em] text-fg-subtle">
+            Bilhete Premiado
+          </p>
+          <p className="font-mono text-2xl font-bold tracking-[0.2em] text-fg">
+            {temCodigo}
+          </p>
+        </div>
+      )}
+
+      {/* Valor do prêmio */}
+      {etapa >= 4 && valorPremio > 0 && (
+        <div className="w-full animate-fade-up rounded-2xl border border-accent-line bg-surface p-5 text-center">
+          <p className="mb-1 text-xs font-medium uppercase tracking-[0.14em] text-fg-subtle">
+            Valor do prêmio
+          </p>
+          <p className="font-mono text-4xl font-bold tracking-tight text-accent">
+            {formatarValor(etapa >= 5 ? contadorValor : 0)}
+          </p>
+        </div>
+      )}
+
+      {/* Resgate do prêmio */}
+      {etapa >= 5 && (
+        <div className="w-full animate-fade-up">
+          {liberado && temCodigo ? (
+            <div className="rounded-2xl border border-accent-line bg-surface p-5 text-center">
+              <p className="mb-3 text-xs font-medium uppercase tracking-[0.14em] text-accent">
+                Prêmio liberado!
+              </p>
+              <p className="mb-4 text-sm text-fg-muted">
+                Copie o código abaixo para resgatar seu prêmio.
+              </p>
+              <div className="rounded-xl bg-surface-2 p-4">
+                <p className="font-mono text-lg font-bold tracking-[0.15em] text-fg">{temCodigo}</p>
+              </div>
+              <button
+                type="button"
+                onClick={copiarCodigo}
+                className="mt-4 h-11 w-full rounded-full bg-accent text-sm font-semibold text-accent-fg shadow-[inset_0_1px_0_0_rgb(255_255_255/0.35)] transition-all duration-300 hover:bg-accent-strong active:scale-[0.97]"
+              >
+                {copiado ? "Copiado!" : "Copiar código"}
+              </button>
+            </div>
+          ) : temPix ? (
+            <div className="rounded-2xl border border-warning-line bg-warning-soft/50 p-5 text-center">
+              <p className="mb-2 text-lg font-bold text-warning">Aguardando liberação</p>
+              <p className="text-sm text-fg-muted">
+                Sua chave Pix foi registrada. O código do prêmio será liberado em breve.
+              </p>
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-line bg-surface p-5 text-center">
+              <p className="mb-3 text-sm text-fg-muted">
+                Para resgatar seu prêmio, informe sua chave Pix.
+              </p>
+              <button
+                type="button"
+                onClick={() => setPixModal(true)}
+                className="h-11 w-full rounded-full bg-accent text-sm font-semibold text-accent-fg shadow-[inset_0_1px_0_0_rgb(255_255_255/0.35)] transition-all duration-300 hover:bg-accent-strong active:scale-[0.97]"
+              >
+                Resgatar meu prêmio
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Voltar */}
+      {etapa >= 5 && (
+        <button
+          type="button"
+          onClick={onVoltar}
+          className="mt-2 text-sm text-fg-subtle transition-colors hover:text-fg"
+        >
+          Consultar outro CPF
+        </button>
+      )}
+
+      {/* Modal Pix */}
+      {pixModal && (
+        <ModalPix
+          cpf={dadosAtuais.cpf}
+          onClose={() => setPixModal(false)}
+          onSalvo={(tipo, chave) => {
+            setDadosAtuais((prev) => ({
+              ...prev,
+              premio: {
+                codigo: prev.premio?.codigo ?? null,
+                estado: prev.premio?.estado ?? "bloqueado",
+                valor: prev.premio?.valor ?? null,
+                pix_tipo: tipo,
+                pix_chave: chave,
+              },
+            }));
+            setPixModal(false);
+          }}
+        />
+      )}
+
+      <style>{`
+        @keyframes bounce-trophy {
+          0% { transform: scale(0) rotate(-15deg); }
+          50% { transform: scale(1.3) rotate(5deg); }
+          70% { transform: scale(0.9) rotate(-3deg); }
+          100% { transform: scale(1) rotate(0deg); }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between gap-3">
+      <span className="text-fg-subtle">{label}</span>
+      <span className="text-right font-medium text-fg">{value}</span>
+    </div>
+  );
+}
+
+function formatDataBr(iso: string) {
+  const [y, m, d] = iso.split("-");
+  return `${d}/${m}/${y}`;
+}
+
+function ModalPix({
+  cpf, onClose, onSalvo,
+}: {
+  cpf: string;
+  onClose: () => void;
+  onSalvo: (tipo: string, chave: string) => void;
+}) {
+  const [tipo, setTipo] = useState("cpf");
+  const [chave, setChave] = useState("");
+  const [salvando, setSalvando] = useState(false);
+  const [erro, setErro] = useState("");
+
+  async function salvar(e: React.FormEvent) {
+    e.preventDefault();
+    if (!chave.trim()) { setErro("Preencha a chave Pix."); return; }
+    setSalvando(true);
+    setErro("");
+    const res = await enviarPixChave(cpf, tipo, chave);
+    setSalvando(false);
+    if (!res.ok) { setErro(res.erro ?? "Erro ao salvar."); return; }
+    onSalvo(tipo, chave);
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
+      <div className="w-full max-w-sm animate-fade-up rounded-2xl border border-line bg-surface p-6 shadow-float">
+        <h3 className="mb-4 text-lg font-bold text-fg">Chave Pix</h3>
+        <form onSubmit={salvar} className="flex flex-col gap-4">
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-fg-muted">Tipo da chave</label>
+            <select
+              value={tipo}
+              onChange={(e) => setTipo(e.target.value)}
+              className="h-11 w-full appearance-none rounded-xl border border-line-strong bg-surface-2 px-3.5 text-sm text-fg outline-none transition-all duration-300 focus:border-accent/60"
+            >
+              <option value="cpf">CPF</option>
+              <option value="telefone">Telefone</option>
+              <option value="email">E-mail</option>
+              <option value="aleatoria">Chave aleatória</option>
+            </select>
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-fg-muted">Chave</label>
+            <input
+              type="text"
+              value={chave}
+              onChange={(e) => setChave(e.target.value)}
+              placeholder={
+                tipo === "cpf" ? "000.000.000-00"
+                : tipo === "telefone" ? "(00) 00000-0000"
+                : tipo === "email" ? "email@exemplo.com"
+                : "Cole sua chave aqui"
+              }
+              className="h-11 w-full rounded-xl border border-line-strong bg-surface-2 px-3.5 text-sm text-fg placeholder:text-fg-subtle outline-none transition-all duration-300 focus:border-accent/60"
+              autoFocus
+            />
+          </div>
+          {erro && <p className="text-sm text-danger">{erro}</p>}
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 h-11 rounded-full border border-line-strong bg-surface-2 text-sm font-medium text-fg transition-all duration-300 hover:bg-surface-3 active:scale-[0.97]"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={salvando}
+              className="flex-1 h-11 rounded-full bg-accent text-sm font-semibold text-accent-fg transition-all duration-300 hover:bg-accent-strong active:scale-[0.97] disabled:opacity-50"
+            >
+              {salvando ? "Salvando..." : "Enviar"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}

@@ -42,9 +42,9 @@ export interface FichaImportada {
   idade: number | null;
   profissao: string | null;
   renda: number | null;
-  /** Só vêm do .csv do Serasa. */
   cidade?: string | null;
   nascimento?: string | null; // "AAAA-MM-DD"
+  endereco?: string | null;
   /** Da compra mais recente. */
   pedido: string | null;
   comprado_em: string | null;

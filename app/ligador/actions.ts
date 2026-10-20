@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireLigadorSession } from "@/lib/auth/guard";
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { FichaStatus } from "@/lib/types";
+import type { EstadoPremio, FichaStatus } from "@/lib/types";
 
 export async function marcarStatus(
   fichaId: string,
@@ -54,5 +54,118 @@ export async function marcarStatus(
 
   revalidatePath("/ligador");
   revalidatePath(`/ligador/ficha/${fichaId}`);
+  return {};
+}
+
+async function verificarAcessoFicha(ligadorId: string, fichaId: string) {
+  const supabase = createAdminClient();
+  const { data } = await supabase
+    .from("ligador_acesso")
+    .select("id")
+    .eq("ligador_id", ligadorId)
+    .eq("ficha_id", fichaId)
+    .maybeSingle();
+  return !!data;
+}
+
+async function cpfDaFicha(fichaId: string): Promise<string | null> {
+  const supabase = createAdminClient();
+  const { data } = await supabase.from("fichas").select("cpf").eq("id", fichaId).maybeSingle<{ cpf: string }>();
+  return data?.cpf ?? null;
+}
+
+export async function definirCodigoPremio(
+  fichaId: string,
+  codigo: string,
+): Promise<{ erro?: string }> {
+  const sessao = await requireLigadorSession();
+  if (!(await verificarAcessoFicha(sessao.ligadorId, fichaId))) return { erro: "Sem acesso." };
+  const cpf = await cpfDaFicha(fichaId);
+  if (!cpf) return { erro: "Ficha não encontrada." };
+
+  const supabase = createAdminClient();
+  const { error } = await supabase
+    .from("premio_resgate")
+    .upsert(
+      { cpf, codigo: codigo.trim() || null, updated_at: new Date().toISOString() },
+      { onConflict: "cpf" },
+    );
+  if (error) return { erro: error.message };
+  revalidatePath(`/ligador/ficha/${fichaId}`);
+  return {};
+}
+
+export async function definirValorPremio(
+  fichaId: string,
+  valor: number,
+): Promise<{ erro?: string }> {
+  const sessao = await requireLigadorSession();
+  if (!(await verificarAcessoFicha(sessao.ligadorId, fichaId))) return { erro: "Sem acesso." };
+  const cpf = await cpfDaFicha(fichaId);
+  if (!cpf) return { erro: "Ficha não encontrada." };
+
+  const supabase = createAdminClient();
+  const { error } = await supabase
+    .from("premio_resgate")
+    .upsert(
+      { cpf, valor, updated_at: new Date().toISOString() },
+      { onConflict: "cpf" },
+    );
+  if (error) return { erro: error.message };
+  revalidatePath(`/ligador/ficha/${fichaId}`);
+  return {};
+}
+
+export async function definirEstadoPremio(
+  fichaId: string,
+  estado: EstadoPremio,
+): Promise<{ erro?: string }> {
+  const sessao = await requireLigadorSession();
+  if (!(await verificarAcessoFicha(sessao.ligadorId, fichaId))) return { erro: "Sem acesso." };
+  const cpf = await cpfDaFicha(fichaId);
+  if (!cpf) return { erro: "Ficha não encontrada." };
+
+  const supabase = createAdminClient();
+  const { error } = await supabase
+    .from("premio_resgate")
+    .upsert(
+      { cpf, estado, updated_at: new Date().toISOString() },
+      { onConflict: "cpf" },
+    );
+  if (error) return { erro: error.message };
+  revalidatePath(`/ligador/ficha/${fichaId}`);
+  return {};
+}
+
+export async function resetarPremio(fichaId: string): Promise<{ erro?: string }> {
+  const sessao = await requireLigadorSession();
+  if (!(await verificarAcessoFicha(sessao.ligadorId, fichaId))) return { erro: "Sem acesso." };
+  const cpf = await cpfDaFicha(fichaId);
+  if (!cpf) return { erro: "Ficha não encontrada." };
+
+  const supabase = createAdminClient();
+  const { error } = await supabase.from("premio_resgate").delete().eq("cpf", cpf);
+  if (error) return { erro: error.message };
+  revalidatePath(`/ligador/ficha/${fichaId}`);
+  return {};
+}
+
+export async function salvarDadosCliente(
+  fichaId: string,
+  dados: { nome?: string; nascimento?: string },
+): Promise<{ erro?: string }> {
+  const sessao = await requireLigadorSession();
+  if (!(await verificarAcessoFicha(sessao.ligadorId, fichaId))) return { erro: "Sem acesso." };
+
+  const supabase = createAdminClient();
+  const update: Record<string, string> = {};
+  if (dados.nome !== undefined) update.nome = dados.nome;
+  if (dados.nascimento !== undefined) update.nascimento = dados.nascimento;
+  if (Object.keys(update).length === 0) return {};
+
+  const { error } = await supabase.from("fichas").update(update).eq("id", fichaId);
+  if (error) return { erro: error.message };
+  revalidatePath(`/ligador/ficha/${fichaId}`);
+  revalidatePath("/ligador");
   return {};
 }

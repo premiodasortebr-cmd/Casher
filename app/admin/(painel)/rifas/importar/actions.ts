@@ -25,7 +25,7 @@ export type EstadoImport = {
 };
 
 const COLUNAS_FICHA =
-  "cpf, nome, telefone, telefone_confirmado, idade, profissao, renda, cidade, nascimento, pedido, comprado_em, pagamento_valor, pagamento_status, pagamento_pago_em, qtd_numeros, compras";
+  "cpf, nome, telefone, telefone_confirmado, idade, profissao, renda, cidade, nascimento, endereco, pedido, comprado_em, pagamento_valor, pagamento_status, pagamento_pago_em, qtd_numeros, compras";
 
 /**
  * Campo vazio no arquivo novo mantém o que já estava salvo; campo preenchido
@@ -44,6 +44,7 @@ function completarCom(nova: FichaImportada, salva: FichaImportada | undefined): 
     renda: nova.renda ?? salva.renda,
     cidade: nova.cidade ?? salva.cidade ?? null,
     nascimento: nova.nascimento ?? salva.nascimento ?? null,
+    endereco: nova.endereco ?? salva.endereco ?? null,
     compras,
     ...resumoCompras(compras),
   };

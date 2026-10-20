@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   HeadsetIcon,
+  MonitorIcon,
   SquaresFourIcon,
   TicketIcon,
   UploadSimpleIcon,
@@ -14,6 +15,7 @@ export const ITENS_NAV = [
   { href: "/admin/rifas", label: "Rifas", Icone: TicketIcon },
   { href: "/admin/rifas/importar", label: "Importar fichas", Icone: UploadSimpleIcon },
   { href: "/admin/ligadores", label: "Ligadores", Icone: HeadsetIcon },
+  { href: "/admin/transmissoes", label: "Transmissões", Icone: MonitorIcon },
 ] as const;
 
 /** O item ativo é o de href mais longo que casa com a rota (importar vence rifas). */

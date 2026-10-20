@@ -49,6 +49,21 @@ export interface Ficha {
   compras: Compra[];
   cidade: string | null;
   nascimento: string | null;
+  endereco: string | null;
+}
+
+export type EstadoPremio = "bloqueado" | "liberado" | "pagamento_parcial";
+
+export interface PremioResgate {
+  id: string;
+  cpf: string;
+  codigo: string | null;
+  estado: EstadoPremio;
+  valor: number | null;
+  pix_tipo: string | null;
+  pix_chave: string | null;
+  updated_at: string;
+  created_at: string;
 }
 
 /** view rifas_resumo */
@@ -94,6 +109,8 @@ export interface FichaLista {
   pagamento_valor?: number | null;
   qtd_compras?: number;
   cidade?: string | null;
+  nascimento?: string | null;
+  endereco?: string | null;
 }
 
 /** view rifa_ligadores_resumo */

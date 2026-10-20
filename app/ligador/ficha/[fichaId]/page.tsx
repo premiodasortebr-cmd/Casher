@@ -20,8 +20,10 @@ import { EmptyState } from "@/components/ui/Layout";
 import { requireLigadorSession } from "@/lib/auth/guard";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { formatBRL, formatCPF, formatDataHora, formatNumero, formatRelativo, telHref, whatsappHref } from "@/lib/format";
-import type { Compra, Ficha, FichaStatus } from "@/lib/types";
+import type { Compra, Ficha, FichaStatus, PremioResgate } from "@/lib/types";
 import { FichaAcoes } from "../../FichaAcoes";
+import { PremioResgateCard } from "../../PremioResgate";
+import { DadosCliente } from "../../DadosCliente";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -62,6 +64,12 @@ export default async function FichaPage({ params }: { params: Promise<{ fichaId:
       .returns<LogLinha[]>(),
   ]);
   if (!ficha) notFound();
+
+  const { data: premio } = await supabase
+    .from("premio_resgate")
+    .select("*")
+    .eq("cpf", ficha.cpf)
+    .maybeSingle<PremioResgate>();
 
   // `compras` só existe depois da migration 0007.
   const compras: Compra[] = Array.isArray(ficha.compras) ? ficha.compras : [];
@@ -155,6 +163,11 @@ export default async function FichaPage({ params }: { params: Promise<{ fichaId:
                 {ficha.nascimento.split("-").reverse().join("/")}
               </Dado>
             )}
+            {ficha.endereco && (
+              <Dado icon={<MapPinIcon />} label="Endereço">
+                {ficha.endereco}
+              </Dado>
+            )}
             <Dado icon={<ReceiptIcon />} label="Comprou" mono>
               {compras.length > 0 || totalNumeros != null
                 ? `${formatNumero(totalNumeros ?? 0)} número${totalNumeros === 1 ? "" : "s"} · ${formatBRL(totalPago)}`
@@ -164,13 +177,24 @@ export default async function FichaPage({ params }: { params: Promise<{ fichaId:
         </Card>
 
         <Card className="animate-fade-up [animation-delay:80ms]">
+          <CardHeader title="Editar dados do cliente" />
+          <div className="p-5">
+            <DadosCliente fichaId={ficha.id} nomeInicial={ficha.nome} nascimentoInicial={ficha.nascimento} />
+          </div>
+        </Card>
+
+        <div className="animate-fade-up [animation-delay:100ms]">
+          <PremioResgateCard fichaId={ficha.id} premio={premio} />
+        </div>
+
+        <Card className="animate-fade-up [animation-delay:140ms]">
           <CardHeader title="Como foi o contato" description="Marca aqui depois de falar com a pessoa" />
           <div className="p-5">
             <FichaAcoes fichaId={ficha.id} status={ficha.status} observacao={ficha.observacao} />
           </div>
         </Card>
 
-        <Card className="animate-fade-up [animation-delay:120ms]">
+        <Card className="animate-fade-up [animation-delay:180ms]">
           <CardHeader
             title={`Compras${compras.length ? ` (${compras.length})` : ""}`}
             description={
@@ -215,7 +239,7 @@ export default async function FichaPage({ params }: { params: Promise<{ fichaId:
           )}
         </Card>
 
-        <Card className="animate-fade-up [animation-delay:160ms]">
+        <Card className="animate-fade-up [animation-delay:220ms]">
           <CardHeader title="Histórico" description="Quem marcou o quê, e quando" />
           {(historico ?? []).length === 0 ? (
             <p className="px-5 py-5 text-[13.5px] text-fg-subtle">Ninguém marcou essa ficha ainda.</p>
