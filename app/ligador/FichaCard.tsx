@@ -24,7 +24,6 @@ export function FichaCard({ ficha }: { ficha: FichaLista }) {
         className="group flex items-start gap-3 p-4 transition-colors duration-300 ease-spring hover:bg-white/[0.03]"
       >
         <div className="min-w-0 flex-1">
-          <p className="mb-1 truncate text-[11px] uppercase tracking-[0.12em] text-fg-subtle">{ficha.rifa_nome}</p>
           <p className="font-medium text-fg">{ficha.nome}</p>
           <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 font-mono text-[12.5px] tabular-nums text-fg-subtle">
             {formatCPF(ficha.cpf)}

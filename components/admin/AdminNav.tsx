@@ -6,19 +6,16 @@ import {
   HeadsetIcon,
   MonitorIcon,
   SquaresFourIcon,
-  TicketIcon,
   UploadSimpleIcon,
 } from "@phosphor-icons/react/dist/ssr";
 
 export const ITENS_NAV = [
-  { href: "/admin", label: "Visão geral", Icone: SquaresFourIcon },
-  { href: "/admin/rifas", label: "Rifas", Icone: TicketIcon },
-  { href: "/admin/rifas/importar", label: "Importar fichas", Icone: UploadSimpleIcon },
+  { href: "/admin", label: "Dashboard", Icone: SquaresFourIcon },
+  { href: "/admin/importar", label: "Importar fichas", Icone: UploadSimpleIcon },
   { href: "/admin/ligadores", label: "Ligadores", Icone: HeadsetIcon },
   { href: "/admin/transmissoes", label: "Transmissões", Icone: MonitorIcon },
 ] as const;
 
-/** O item ativo é o de href mais longo que casa com a rota (importar vence rifas). */
 function hrefAtivo(pathname: string): string | null {
   let melhor: string | null = null;
   for (const { href } of ITENS_NAV) {
@@ -44,7 +41,7 @@ export function AdminSidebarNav() {
             }`}
           >
             {on && (
-              <span className="absolute inset-y-2.5 -left-3 w-[3px] rounded-r-full bg-accent shadow-[0_0_12px_rgb(200_238_114/0.6)]" />
+              <span className="absolute inset-y-2.5 -left-3 w-[3px] rounded-r-full bg-accent shadow-[0_0_12px_rgb(34_197_94/0.6)]" />
             )}
             <Icone
               size={18}
@@ -73,7 +70,7 @@ export function AdminMobileNav() {
             className={`flex h-9 shrink-0 items-center gap-2 rounded-full border px-3.5 text-[13px] transition-colors duration-300 ease-spring ${
               on
                 ? "border-accent-line bg-accent-soft text-accent"
-                : "border-line bg-white/[0.02] text-fg-muted"
+                : "border-white/[0.09] bg-white/[0.02] text-fg-muted"
             }`}
           >
             <Icone size={15} weight={on ? "fill" : "regular"} />

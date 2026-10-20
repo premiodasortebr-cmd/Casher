@@ -5,33 +5,32 @@ type Variant = "primary" | "secondary" | "ghost" | "danger" | "warning";
 type Size = "sm" | "md" | "lg";
 
 const base =
-  "group/btn relative inline-flex shrink-0 select-none items-center justify-center gap-2 whitespace-nowrap rounded-full font-medium " +
+  "group/btn relative inline-flex shrink-0 select-none items-center justify-center gap-2 whitespace-nowrap font-medium " +
   "transition-[background-color,border-color,color,box-shadow,transform,opacity] duration-300 ease-spring " +
   "active:scale-[0.97] disabled:pointer-events-none disabled:opacity-45";
 
 const variants: Record<Variant, string> = {
   primary:
-    "bg-accent text-accent-fg shadow-[inset_0_1px_0_0_rgb(255_255_255/0.35)] hover:bg-accent-strong hover:shadow-accent",
+    "rounded-2xl bg-accent/30 border border-accent/60 text-white shadow-[inset_0_1px_0_0_rgb(255_255_255/0.1)] hover:bg-accent/40 hover:shadow-accent",
   secondary:
-    "border border-line-strong bg-surface-2 text-fg shadow-bezel hover:border-white/20 hover:bg-surface-3",
-  ghost: "text-fg-muted hover:bg-white/[0.05] hover:text-fg",
+    "rounded-xl border border-white/[0.12] bg-white/[0.04] text-fg shadow-[inset_0_1px_0_0_rgb(255_255_255/0.05)] hover:border-white/20 hover:bg-white/[0.07]",
+  ghost: "rounded-xl text-fg-muted hover:bg-white/[0.05] hover:text-fg",
   danger:
-    "border border-danger-line bg-danger-soft text-danger hover:bg-danger/15 hover:border-danger/50",
+    "rounded-xl border border-danger-line bg-danger-soft text-danger hover:bg-danger/15 hover:border-danger/50",
   warning:
-    "border border-warning-line bg-warning-soft text-warning hover:bg-warning/15 hover:border-warning/50",
+    "rounded-xl border border-warning-line bg-warning-soft text-warning hover:bg-warning/15 hover:border-warning/50",
 };
 
 const sizes: Record<Size, string> = {
   sm: "h-8 px-3.5 text-[13px]",
   md: "h-10 px-4.5 text-sm",
-  lg: "h-12 px-6 text-[15px]",
+  lg: "h-12 px-7 text-[15px] font-bold",
 };
 
-// Quando há ícone no fim, ele vai numa "ilha" circular colada no padding direito.
 const sizesComTrailing: Record<Size, string> = {
   sm: "h-8 pl-3.5 pr-1 text-[13px]",
   md: "h-10 pl-4.5 pr-1 text-sm",
-  lg: "h-12 pl-6 pr-1.5 text-[15px]",
+  lg: "h-12 pl-7 pr-1.5 text-[15px] font-bold",
 };
 
 const ilha: Record<Size, string> = {
@@ -41,7 +40,7 @@ const ilha: Record<Size, string> = {
 };
 
 const ilhaVariant: Record<Variant, string> = {
-  primary: "bg-accent-fg/10",
+  primary: "bg-white/[0.12]",
   secondary: "bg-white/[0.07]",
   ghost: "bg-white/[0.06]",
   danger: "bg-danger/15",
@@ -138,7 +137,6 @@ export function ButtonLink({
   );
 }
 
-/** Botão quadrado só com ícone (ações de linha, fechar, copiar). Sempre com aria-label. */
 export function IconButton({
   className,
   children,

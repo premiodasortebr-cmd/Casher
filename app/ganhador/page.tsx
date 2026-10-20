@@ -101,7 +101,7 @@ function FormCpf({
           placeholder="000.000.000-00"
           value={cpf}
           onChange={(e) => setCpf(maskCpf(e.target.value))}
-          className="h-14 w-full rounded-2xl border border-line-strong bg-surface-2 px-5 text-center text-lg tracking-wider text-fg shadow-[inset_0_1px_2px_0_rgb(0_0_0/0.35)] placeholder:text-fg-subtle outline-none transition-all duration-300 focus:border-accent/60 focus:shadow-[0_0_0_4px_rgb(63_200_115/0.15)]"
+          className="h-14 w-full rounded-2xl border border-line-strong bg-surface-2 px-5 text-center text-lg tracking-wider text-fg shadow-[inset_0_1px_2px_0_rgb(0_0_0/0.35)] placeholder:text-fg-subtle outline-none transition-all duration-300 focus:border-accent/60 focus:shadow-[0_0_0_4px_rgb(34_197_94/0.15)]"
           autoFocus
         />
         {erro && <p className="mt-2 text-center text-sm text-danger">{erro}</p>}
@@ -169,7 +169,7 @@ function Celebracao({ dados, onVoltar }: { dados: DadosGanhador; onVoltar: () =>
     if (confettiDisparado.current) return;
     confettiDisparado.current = true;
     const end = Date.now() + 4000;
-    const cores = ["#3fc873", "#5fd989", "#eec26a", "#ffffff"];
+    const cores = ["#22c55e", "#4ade80", "#eec26a", "#ffffff"];
     (function frame() {
       confetti({
         particleCount: 3,

@@ -2,27 +2,26 @@
 
 /*
  * Casher — design tokens.
- * Dark-only ops console: near-black canvas, graphite surfaces, one lime accent
- * ("dinheiro") that doubles as the success color. Status colors (rose/amber)
- * are semantic only — never decorative.
+ * MaxScale-inspired dark identity: pure black canvas, neutral greys,
+ * vibrant green accent. Glassmorphism cards, accent glow shadows.
  */
 @theme {
-  --color-canvas: #050c0a;
-  --color-surface: #0f1714;
-  --color-surface-2: #172420;
-  --color-surface-3: #1f2c29;
-  --color-line: rgb(255 255 255 / 0.06);
+  --color-canvas: #000000;
+  --color-surface: #0a0a0a;
+  --color-surface-2: #111111;
+  --color-surface-3: #1a1a1a;
+  --color-line: rgb(255 255 255 / 0.07);
   --color-line-strong: rgb(255 255 255 / 0.12);
 
-  --color-fg: #f0f4f2;
-  --color-fg-muted: #9ca89f;
-  --color-fg-subtle: #6b7a73;
+  --color-fg: #f0f2f5;
+  --color-fg-muted: #b4bccc;
+  --color-fg-subtle: #5b6478;
 
-  --color-accent: #3fc873;
-  --color-accent-strong: #5fd989;
-  --color-accent-fg: #071411;
-  --color-accent-soft: rgb(63 200 115 / 0.1);
-  --color-accent-line: rgb(63 200 115 / 0.28);
+  --color-accent: #22c55e;
+  --color-accent-strong: #4ade80;
+  --color-accent-fg: #052e16;
+  --color-accent-soft: rgb(34 197 94 / 0.12);
+  --color-accent-line: rgb(34 197 94 / 0.35);
 
   --color-danger: #f1787d;
   --color-danger-soft: rgb(241 120 125 / 0.1);
@@ -32,15 +31,20 @@
   --color-warning-soft: rgb(238 194 106 / 0.1);
   --color-warning-line: rgb(238 194 106 / 0.28);
 
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
   --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
   --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
 
-  --shadow-bezel: inset 0 1px 0 0 rgb(255 255 255 / 0.05), 0 1px 2px 0 rgb(0 0 0 / 0.5);
-  --shadow-float: inset 0 1px 0 0 rgb(255 255 255 / 0.06), 0 24px 48px -24px rgb(0 0 0 / 0.8);
-  --shadow-accent: 0 0 0 1px rgb(63 200 115 / 0.35), 0 10px 32px -10px rgb(63 200 115 / 0.45);
+  --shadow-bezel: inset 0 1px 0 0 rgb(255 255 255 / 0.05),
+    0 1px 2px 0 rgb(0 0 0 / 0.5);
+  --shadow-float: inset 0 1px 0 0 rgb(255 255 255 / 0.06),
+    0 24px 48px -24px rgb(0 0 0 / 0.8);
+  --shadow-accent: 0 0 0 1px rgb(34 197 94 / 0.18),
+    0 10px 40px -10px rgb(34 197 94 / 0.25),
+    inset 0 1px 0 0 rgb(255 255 255 / 0.04);
 
   --animate-fade-up: fade-up 0.7s var(--ease-spring) both;
   --animate-fade-in: fade-in 0.5s var(--ease-out-soft) both;
@@ -88,17 +92,7 @@
     font-family: var(--font-sans);
     font-feature-settings: "ss01", "cv11";
     text-rendering: optimizeLegibility;
-  }
-
-  /* Grão bem sutil sobre tudo — fixo e sem eventos pra não custar repaint no scroll. */
-  body::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    z-index: 60;
-    pointer-events: none;
-    opacity: 0.035;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    -webkit-font-smoothing: antialiased;
   }
 
   ::selection {

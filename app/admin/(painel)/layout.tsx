@@ -13,7 +13,7 @@ export default async function PainelAdminLayout({ children }: LayoutProps<"/admi
       {/* Luz ambiente no topo — fixa, então não repinta no scroll. */}
       <div
         aria-hidden
-        className="pointer-events-none fixed inset-x-0 top-0 h-[420px] bg-[radial-gradient(60%_100%_at_50%_0%,rgb(200_238_114/0.06),transparent_70%)]"
+        className="pointer-events-none fixed inset-x-0 top-0 h-[420px] bg-[radial-gradient(60%_100%_at_50%_0%,rgb(34_197_94/0.05),transparent_70%)]"
       />
 
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-[260px] flex-col border-r border-line bg-canvas/80 px-5 py-6 backdrop-blur-xl lg:flex">

@@ -95,9 +95,6 @@ export default async function FichaPage({ params }: { params: Promise<{ fichaId:
 
       <main className="mx-auto flex max-w-2xl flex-col gap-4 px-4 py-6 sm:px-6">
         <section className="animate-fade-up">
-          {ficha.rifas?.nome && (
-            <p className="mb-1.5 text-[11px] uppercase tracking-[0.14em] text-fg-subtle">{ficha.rifas.nome}</p>
-          )}
           <h1 className="text-[26px] font-semibold leading-tight tracking-[-0.03em] text-fg">{ficha.nome}</h1>
           {(wa || tel) && (
             <div className="mt-4 flex gap-2">

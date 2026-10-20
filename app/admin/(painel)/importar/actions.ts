@@ -1,0 +1,108 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { requireAdminSession } from "@/lib/auth/guard";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { juntarCompras, resumoCompras, type FichaImportada } from "@/lib/import/parseFichas";
+import { FORMATOS } from "@/lib/import/formatos";
+import { getRifaFamilhao } from "@/lib/rifas";
+
+const LOTE_UPSERT = 500;
+const LOTE_CONSULTA = 200;
+
+export type EstadoImport = {
+  erro?: string;
+  resumo?: {
+    novas: number;
+    atualizadas: number;
+    compras: number;
+    semTelefone: number;
+  };
+};
+
+const COLUNAS_FICHA =
+  "cpf, nome, telefone, telefone_confirmado, idade, profissao, renda, cidade, nascimento, endereco, pedido, comprado_em, pagamento_valor, pagamento_status, pagamento_pago_em, qtd_numeros, compras";
+
+function completarCom(nova: FichaImportada, salva: FichaImportada | undefined): FichaImportada {
+  if (!salva) return nova;
+  const compras = juntarCompras(nova.compras, Array.isArray(salva.compras) ? salva.compras : []);
+  return {
+    cpf: nova.cpf,
+    nome: nova.nome !== "(sem nome)" ? nova.nome : salva.nome,
+    telefone: nova.telefone ?? salva.telefone,
+    telefone_confirmado: nova.telefone ? nova.telefone_confirmado : Boolean(salva.telefone_confirmado),
+    idade: nova.idade ?? salva.idade,
+    profissao: nova.profissao ?? salva.profissao,
+    renda: nova.renda ?? salva.renda,
+    cidade: nova.cidade ?? salva.cidade ?? null,
+    nascimento: nova.nascimento ?? salva.nascimento ?? null,
+    endereco: nova.endereco ?? salva.endereco ?? null,
+    compras,
+    ...resumoCompras(compras),
+  };
+}
+
+function lotes<T>(itens: T[], tamanho: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < itens.length; i += tamanho) out.push(itens.slice(i, i + tamanho));
+  return out;
+}
+
+export async function importarFichas(_estado: EstadoImport, formData: FormData): Promise<EstadoImport> {
+  await requireAdminSession();
+  const supabase = createAdminClient();
+  const formato = FORMATOS.familhao;
+
+  const arquivo = formData.get("arquivo");
+  if (!(arquivo instanceof File) || arquivo.size === 0) return { erro: `Selecione o ${formato.arquivo}.` };
+
+  const { fichas, compras } = formato.ler(await arquivo.text());
+  if (fichas.length === 0) {
+    return { erro: `Não encontrei nenhuma ficha nesse arquivo. Confira se é o ${formato.arquivo} (${formato.descricao})` };
+  }
+
+  const rifa = await getRifaFamilhao();
+
+  const existentes = new Map<string, FichaImportada>();
+  for (const lote of lotes(fichas.map((f) => f.cpf), LOTE_CONSULTA)) {
+    const { data, error } = await supabase
+      .from("fichas")
+      .select(COLUNAS_FICHA)
+      .eq("rifa_id", rifa.id)
+      .in("cpf", lote)
+      .returns<FichaImportada[]>();
+    if (error) return { erro: `Erro ao conferir fichas existentes: ${error.message}` };
+    for (const e of data ?? []) existentes.set(e.cpf, e);
+  }
+  const atualizadas = existentes.size;
+  const completas = fichas.map((f) => completarCom(f, existentes.get(f.cpf)));
+
+  let gravadas = 0;
+  for (const lote of lotes(completas, LOTE_UPSERT)) {
+    const { error } = await supabase
+      .from("fichas")
+      .upsert(lote.map((f) => ({ ...f, rifa_id: rifa.id })), { onConflict: "rifa_id,cpf" });
+    if (error) {
+      revalidatePath("/admin");
+      return {
+        erro:
+          `Erro ao salvar fichas: ${error.message}.` +
+          (gravadas > 0 ? ` ${gravadas} de ${fichas.length} já tinham sido salvas — reimportar o arquivo completa sem duplicar.` : ""),
+      };
+    }
+    gravadas += lote.length;
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/importar");
+  revalidatePath("/ligador");
+
+  return {
+    resumo: {
+      novas: fichas.length - atualizadas,
+      atualizadas,
+      compras,
+      semTelefone: completas.filter((f) => !f.telefone).length,
+    },
+  };
+}

@@ -1,19 +1,23 @@
 import type { ComponentProps, ReactNode } from "react";
 
-/** Painel padrão: superfície grafite, hairline e brilho interno no topo. */
 export function Card({ className, ...rest }: ComponentProps<"div">) {
   return (
     <div
-      className={`rounded-2xl border border-line bg-surface shadow-bezel ${className ?? ""}`}
+      className={`rounded-3xl border border-white/[0.09] bg-surface shadow-bezel backdrop-blur-md ${className ?? ""}`}
       {...rest}
     />
   );
 }
 
-/**
- * "Double-bezel": casca externa translúcida + núcleo com raio concêntrico.
- * Para peças de destaque (login, KPIs principais, setup) — não para listas longas.
- */
+export function GlowCard({ className, ...rest }: ComponentProps<"div">) {
+  return (
+    <div
+      className={`rounded-3xl border border-white/[0.09] bg-surface shadow-accent backdrop-blur-md ${className ?? ""}`}
+      {...rest}
+    />
+  );
+}
+
 export function BezelCard({
   className,
   innerClassName,
@@ -49,10 +53,10 @@ export function CardHeader({
 }) {
   return (
     <div
-      className={`flex items-start justify-between gap-4 border-b border-line px-5 py-4 ${className ?? ""}`}
+      className={`flex items-start justify-between gap-4 border-b border-white/[0.06] px-5 py-4 ${className ?? ""}`}
     >
       <div className="min-w-0">
-        <h2 className="text-[15px] font-medium tracking-tight text-fg">{title}</h2>
+        <h2 className="text-[15px] font-semibold tracking-tight text-fg">{title}</h2>
         {description && <p className="mt-0.5 text-[13px] text-fg-subtle">{description}</p>}
       </div>
       {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
