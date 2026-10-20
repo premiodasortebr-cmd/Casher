@@ -58,6 +58,54 @@ export async function alternarAtivoLigador(ligadorId: string, ativo: boolean): P
   revalidatePath("/admin/ligadores");
 }
 
+export async function excluirLigador(ligadorId: string): Promise<{ erro?: string }> {
+  await requireAdminSession();
+  const supabase = createAdminClient();
+
+  const { data: ligador } = await supabase
+    .from("ligadores")
+    .select("nome")
+    .eq("id", ligadorId)
+    .maybeSingle<{ nome: string }>();
+  if (!ligador) return { erro: "Ligador não encontrado." };
+
+  await supabase
+    .from("ficha_status_log")
+    .delete()
+    .eq("ligador_id", ligadorId);
+  await supabase
+    .from("fichas")
+    .update({ status_atualizado_por: null })
+    .eq("status_atualizado_por", ligadorId);
+
+  const { error } = await supabase.from("ligadores").delete().eq("id", ligadorId);
+  if (error) return { erro: `Erro ao excluir ${ligador.nome}: ${error.message}` };
+
+  revalidatePath("/admin/ligadores");
+  revalidatePath("/admin");
+  revalidatePath("/ligador");
+  return {};
+}
+
+export async function excluirTodasFichas(): Promise<{ erro?: string; excluidas?: number }> {
+  await requireAdminSession();
+  const supabase = createAdminClient();
+
+  const { count } = await supabase
+    .from("fichas")
+    .select("id", { count: "exact", head: true });
+
+  if (!count || count === 0) return { erro: "Não há fichas pra excluir." };
+
+  const { error } = await supabase.from("fichas").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+  if (error) return { erro: `Erro ao excluir fichas: ${error.message}` };
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/ligadores");
+  revalidatePath("/ligador");
+  return { excluidas: count };
+}
+
 export async function redefinirSenhaLigador(
   _estadoAnterior: EstadoLigador,
   formData: FormData,

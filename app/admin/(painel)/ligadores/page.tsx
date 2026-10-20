@@ -1,6 +1,6 @@
 import { HeadsetIcon } from "@phosphor-icons/react/dist/ssr";
 import { PageHeader, EmptyState } from "@/components/ui/Layout";
-import { Card } from "@/components/ui/Card";
+import { Card, CardHeader } from "@/components/ui/Card";
 import { Avatar } from "@/components/ui/Avatar";
 import { StatusBar } from "@/components/ui/Stats";
 import { requireAdminSession } from "@/lib/auth/guard";
@@ -9,6 +9,8 @@ import { formatNumero, formatRelativo } from "@/lib/format";
 import type { LigadorResumo } from "@/lib/types";
 import { NovoLigadorForm } from "./NovoLigadorForm";
 import { BotaoAtivo } from "./BotaoAtivo";
+import { ExcluirLigador } from "./ExcluirLigador";
+import { ExcluirFichas } from "./ExcluirFichas";
 
 export default async function LigadoresPage() {
   await requireAdminSession();
@@ -48,7 +50,7 @@ export default async function LigadoresPage() {
             return (
               <div
                 key={l.id}
-                className={`grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 px-5 py-4 md:grid-cols-[auto_minmax(0,1fr)_12rem_9rem_auto] ${
+                className={`grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 px-5 py-4 md:grid-cols-[auto_minmax(0,1fr)_12rem_9rem_auto_auto] ${
                   l.ativo ? "" : "opacity-60"
                 }`}
               >
@@ -70,14 +72,32 @@ export default async function LigadoresPage() {
                   {l.ultima_atividade ? `Ativo ${formatRelativo(l.ultima_atividade)}` : "Sem atividade ainda"}
                 </p>
 
-                <div className="col-start-3 row-start-1 md:col-start-5">
+                <div className="col-start-3 row-start-1 flex items-center gap-2 md:col-start-5">
                   <BotaoAtivo ligadorId={l.id} ativo={l.ativo} />
+                </div>
+
+                <div className="hidden md:flex md:col-start-6 md:row-start-1">
+                  <ExcluirLigador ligadorId={l.id} nome={l.nome} />
+                </div>
+
+                <div className="col-span-3 flex md:hidden">
+                  <ExcluirLigador ligadorId={l.id} nome={l.nome} />
                 </div>
               </div>
             );
           })}
         </Card>
       )}
+
+      <Card>
+        <CardHeader
+          title="Zona perigosa"
+          description="Ações destrutivas que não podem ser desfeitas."
+        />
+        <div className="p-5">
+          <ExcluirFichas />
+        </div>
+      </Card>
     </div>
   );
 }
