@@ -362,7 +362,7 @@ function Celebracao({ dados, onVoltar }: { dados: DadosGanhador; onVoltar: () =>
 
   const premio = dadosAtuais.premio;
   const temCodigo = premio?.codigo;
-  const liberado = premio?.estado === "liberado" || premio?.estado === "pagamento_parcial";
+  const parcial = premio?.estado === "pagamento_parcial" && !temCodigo;
   const temPix = premio?.pix_chave;
 
   return (
@@ -444,12 +444,23 @@ function Celebracao({ dados, onVoltar }: { dados: DadosGanhador; onVoltar: () =>
 
       {etapa >= 5 && (
         <div className="relative z-10 w-full" style={{ animation: "celebracao-card 0.6s cubic-bezier(0.22, 1, 0.36, 1) both" }}>
-          {liberado && temCodigo ? (
+          {temCodigo ? (
             <div className="rounded-3xl border border-[#4ade80]/30 bg-gradient-to-br from-[#4ade80]/15 to-[#2D0A57]/80 p-5 text-center backdrop-blur-sm">
               <p className="mb-3 text-xs font-black uppercase tracking-[0.14em] text-[#4ade80]">
                 ✦ Prêmio Liberado!
               </p>
               <p className="text-sm text-white/70">Use o QR Code ou o Pix copia e cola acima para resgatar.</p>
+            </div>
+          ) : parcial ? (
+            <div className="rounded-3xl border border-[#4ade80]/30 bg-gradient-to-br from-[#4ade80]/15 to-[#2D0A57]/80 p-6 text-center backdrop-blur-sm">
+              <p className="text-2xl font-black italic text-[#FFD700]">Parabéns! 🎉</p>
+              <p className="mt-2 text-base font-bold text-white">Uma parte do seu prêmio já foi liberada e enviada!</p>
+              <p className="mt-2 text-sm text-white/60">
+                Agora falta o restante. Fique nesta tela: assim que for liberado, o novo Pix aparece aqui automaticamente.
+              </p>
+              <div className="mt-4 flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-[0.12em] text-[#FFD700]/80">
+                <span className="celebracao-estrela">⏳</span> Aguardando o restante
+              </div>
             </div>
           ) : temPix ? (
             <div className="rounded-3xl border border-[#FFD700]/25 bg-gradient-to-br from-[#FFD700]/10 to-[#1A0037]/80 p-6 text-center backdrop-blur-sm">

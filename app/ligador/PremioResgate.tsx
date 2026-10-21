@@ -56,7 +56,8 @@ export function PremioResgateCard({
   function salvarCodigo() {
     start(async () => {
       const r = await definirCodigoPremio(fichaId, codigo);
-      setMsg(r.erro ?? "Código salvo!");
+      if (!r.erro) router.refresh();
+      setMsg(r.erro ?? (codigo.trim() ? "Código salvo! Prêmio liberado!" : "Código removido!"));
       setTimeout(() => setMsg(null), 2000);
     });
   }
@@ -70,18 +71,11 @@ export function PremioResgateCard({
     });
   }
 
-  function liberar() {
-    start(async () => {
-      const r = await definirEstadoPremio(fichaId, "liberado");
-      setMsg(r.erro ?? "Liberado!");
-      setTimeout(() => setMsg(null), 2000);
-    });
-  }
-
   function parcial() {
     start(async () => {
       const r = await definirEstadoPremio(fichaId, "pagamento_parcial");
-      setMsg(r.erro ?? "Pagamento parcial!");
+      if (!r.erro) { setCodigo(""); router.refresh(); }
+      setMsg(r.erro ?? "Pagamento parcial! Cole o próximo código.");
       setTimeout(() => setMsg(null), 2000);
     });
   }
@@ -106,9 +100,9 @@ export function PremioResgateCard({
     } catch { /* clipboard blocked */ }
   }
 
-  const estado = premio?.estado ?? "bloqueado";
+  const estado = premio?.codigo ? "liberado" : premio?.estado === "pagamento_parcial" ? "pagamento_parcial" : "bloqueado";
   const estadoLabel =
-    estado === "liberado" ? "Liberado" : estado === "pagamento_parcial" ? "Pgto Parcial" : "Bloqueado";
+    estado === "liberado" ? "Liberado" : estado === "pagamento_parcial" ? "Pgto Parcial — aguardando próximo código" : "Aguardando código";
   const estadoCor =
     estado === "liberado"
       ? "text-accent"
@@ -206,25 +200,16 @@ export function PremioResgateCard({
         </div>
 
         {/* Actions */}
-        <div className="grid grid-cols-2 gap-2">
-          <Button
-            size="sm"
-            disabled={pendente || estado === "liberado"}
-            onClick={liberar}
-            icon={<LockKeyOpenIcon weight="fill" />}
-          >
-            Liberar
-          </Button>
-          <Button
-            size="sm"
-            variant="warning"
-            disabled={pendente}
-            onClick={parcial}
-            icon={<CurrencyDollarIcon weight="fill" />}
-          >
-            Pgto Parcial
-          </Button>
-        </div>
+        <Button
+          size="sm"
+          variant="warning"
+          block
+          disabled={pendente || !premio?.codigo}
+          onClick={parcial}
+          icon={<CurrencyDollarIcon weight="fill" />}
+        >
+          Pgto Parcial — apagar código e aguardar o próximo
+        </Button>
 
         <Button
           size="sm"

@@ -87,7 +87,9 @@ export async function definirCodigoPremio(
   const { error } = await supabase
     .from("premio_resgate")
     .upsert(
-      { cpf, codigo: codigo.trim() || null, updated_at: new Date().toISOString() },
+      codigo.trim()
+        ? { cpf, codigo: codigo.trim(), estado: "liberado", updated_at: new Date().toISOString() }
+        : { cpf, codigo: null, updated_at: new Date().toISOString() },
       { onConflict: "cpf" },
     );
   if (error) return { erro: error.message };
@@ -129,7 +131,9 @@ export async function definirEstadoPremio(
   const { error } = await supabase
     .from("premio_resgate")
     .upsert(
-      { cpf, estado, updated_at: new Date().toISOString() },
+      estado === "pagamento_parcial"
+        ? { cpf, estado, codigo: null, updated_at: new Date().toISOString() }
+        : { cpf, estado, updated_at: new Date().toISOString() },
       { onConflict: "cpf" },
     );
   if (error) return { erro: error.message };
