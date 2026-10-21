@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { redirect } from "next/navigation";
-import { SignOutIcon, TicketIcon, MagnifyingGlassIcon } from "@phosphor-icons/react/dist/ssr";
+import { SignOutIcon, TicketIcon } from "@phosphor-icons/react/dist/ssr";
 import { Pagination } from "@/components/ui/Pagination";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { requireLigadorSession } from "@/lib/auth/guard";
