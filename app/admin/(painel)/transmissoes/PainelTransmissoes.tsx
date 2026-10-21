@@ -1,20 +1,23 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   MonitorIcon,
-  EyeIcon,
-  EyeSlashIcon,
   CircleIcon,
   SpeakerSimpleHighIcon,
   SpeakerSimpleSlashIcon,
+  CornersOutIcon,
+  XIcon,
+  MicrophoneIcon,
+  MicrophoneSlashIcon,
+  ArrowClockwiseIcon,
 } from "@phosphor-icons/react/dist/ssr";
-import { Card, CardHeader } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/Layout";
 import {
   conectarPainelTransmissoes,
   suportaTransmissao,
+  type EstadoConexao,
 } from "@/lib/transmissao";
 
 interface LigadorInfo {
@@ -25,144 +28,230 @@ interface LigadorInfo {
 export function PainelTransmissoes({ ligadores }: { ligadores: LigadorInfo[] }) {
   const [suporta] = useState(() => suportaTransmissao());
   const [assistindo, setAssistindo] = useState<string | null>(null);
-  const [conectado, setConectado] = useState(false);
-  const [muted, setMuted] = useState(true);
+  const [online, setOnline] = useState<string[]>([]);
+  const [estado, setEstado] = useState<EstadoConexao | "encerrou">("conectando");
+  const [muted, setMuted] = useState(false);
+  const [falando, setFalando] = useState(false);
+  const [erroMic, setErroMic] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const playerRef = useRef<HTMLDivElement>(null);
   const painelRef = useRef<ReturnType<typeof conectarPainelTransmissoes> | null>(null);
 
-  const iniciarPainel = useCallback(() => {
-    if (painelRef.current) return painelRef.current;
+  useEffect(() => {
+    if (!suporta) return;
     const painel = conectarPainelTransmissoes({
-      onStream: (stream, _ligadorId) => {
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.play().catch(() => {});
-        }
+      onStream: (stream) => {
+        const v = videoRef.current;
+        if (!v) return;
+        v.srcObject = stream;
+        v.play().catch(() => {
+          v.muted = true;
+          setMuted(true);
+          v.play().catch(() => {});
+        });
       },
-      onFim: (ligadorId) => {
-        if (assistindo === ligadorId) {
-          setAssistindo(null);
-          if (videoRef.current) videoRef.current.srcObject = null;
-        }
+      onFim: () => {
+        setEstado("encerrou");
+        setFalando(false);
+        if (videoRef.current) videoRef.current.srcObject = null;
       },
-      onConexao: (ok) => setConectado(ok),
+      onOnline: setOnline,
+      onEstado: setEstado,
     });
     painelRef.current = painel;
-    return painel;
-  }, [assistindo]);
+    return () => painel.fechar();
+  }, [suporta]);
 
-  function assistir(ligadorId: string) {
-    const painel = iniciarPainel();
-    painel.assistir(ligadorId);
-    setAssistindo(ligadorId);
+  function assistir(id: string) {
+    if (id === assistindo) return;
+    setFalando(false);
+    setErroMic(null);
+    if (videoRef.current) videoRef.current.srcObject = null;
+    setAssistindo(id);
+    painelRef.current?.assistir(id);
   }
 
   function sair() {
     painelRef.current?.sair();
     setAssistindo(null);
+    setFalando(false);
     if (videoRef.current) videoRef.current.srcObject = null;
   }
 
-  useEffect(() => {
-    return () => { painelRef.current?.fechar(); };
-  }, []);
+  async function alternarFala() {
+    setErroMic(null);
+    try {
+      await painelRef.current?.falar(!falando);
+      setFalando(!falando);
+    } catch {
+      setErroMic("Libere o microfone no navegador pra falar com o ligador.");
+    }
+  }
 
-  function toggleMute() {
-    setMuted((m) => {
-      if (videoRef.current) videoRef.current.muted = !m;
-      return !m;
-    });
+  function alternarSom() {
+    const v = videoRef.current;
+    if (!v) return;
+    v.muted = !v.muted;
+    setMuted(v.muted);
+  }
+
+  function telaCheia() {
+    const el = playerRef.current;
+    if (!el) return;
+    if (document.fullscreenElement) document.exitFullscreen();
+    else el.requestFullscreen().catch(() => {});
   }
 
   if (!suporta) {
     return (
       <Card>
-        <EmptyState
-          icon={<MonitorIcon />}
-          title="Navegador sem suporte"
-          description="Seu navegador não suporta WebRTC. Use Chrome ou Edge."
-        />
+        <EmptyState icon={<MonitorIcon />} title="Navegador sem suporte" description="Use Chrome ou Edge." />
       </Card>
     );
   }
 
-  const ligadorAtual = ligadores.find((l) => l.id === assistindo);
+  const ordenados = [...ligadores].sort(
+    (a, b) => Number(online.includes(b.id)) - Number(online.includes(a.id)) || a.nome.localeCompare(b.nome),
+  );
+  const atual = ligadores.find((l) => l.id === assistindo);
+  const atualOnline = !!assistindo && online.includes(assistindo);
+  const aoVivo = estado === "ao-vivo";
 
   return (
-    <div className="flex flex-col gap-4">
-      {/* Video player */}
-      {assistindo && (
-        <Card className="overflow-hidden">
-          <div className="relative bg-black">
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted={muted}
-              className="aspect-video w-full"
-            />
-            <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
-              <div className="flex items-center gap-2 rounded-full bg-black/70 px-3 py-1.5 text-xs text-white backdrop-blur-sm">
-                <CircleIcon size={8} weight="fill" className="animate-pulse text-danger" />
-                {ligadorAtual?.nome ?? "Ligador"}
-              </div>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={toggleMute}
-                  className="flex size-8 items-center justify-center rounded-full bg-black/70 text-white backdrop-blur-sm transition-colors hover:bg-black/90"
-                  aria-label={muted ? "Ativar som" : "Mutar"}
-                >
-                  {muted ? <SpeakerSimpleSlashIcon size={16} /> : <SpeakerSimpleHighIcon size={16} />}
-                </button>
-                <button
-                  type="button"
-                  onClick={sair}
-                  className="flex size-8 items-center justify-center rounded-full bg-danger/80 text-white backdrop-blur-sm transition-colors hover:bg-danger"
-                  aria-label="Parar de assistir"
-                >
-                  <EyeSlashIcon size={16} />
-                </button>
-              </div>
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {/* Lista de ligadores */}
-      <Card>
-        <CardHeader
-          title="Transmissões"
-          description={`${ligadores.length} ligador${ligadores.length === 1 ? "" : "es"} — clique pra assistir`}
-        />
+    <div className="grid gap-4 lg:grid-cols-[280px_1fr]">
+      <Card className="h-fit overflow-hidden">
+        <div className="border-b border-line px-4 py-3.5">
+          <p className="text-[14px] font-semibold text-fg">Ligadores</p>
+          <p className="mt-0.5 text-[12.5px] text-fg-subtle">
+            <span className="text-accent">{online.length} transmitindo</span> · {ligadores.length} no total
+          </p>
+        </div>
         {ligadores.length === 0 ? (
-          <EmptyState
-            icon={<MonitorIcon />}
-            title="Nenhum ligador"
-            description="Cadastre ligadores pra poder ver as transmissões aqui."
-            className="py-10"
-          />
+          <p className="px-4 py-6 text-[13px] text-fg-subtle">Nenhum ligador cadastrado.</p>
         ) : (
-          <ul className="divide-y divide-line">
-            {ligadores.map((lig) => {
-              const ativo = lig.id === assistindo;
+          <ul className="max-h-[70vh] overflow-y-auto p-2">
+            {ordenados.map((lig) => {
+              const on = online.includes(lig.id);
+              const sel = lig.id === assistindo;
               return (
-                <li key={lig.id} className="flex items-center justify-between gap-3 px-5 py-3.5">
-                  <span className="text-sm font-medium text-fg">{lig.nome}</span>
-                  <Button
-                    size="sm"
-                    variant={ativo ? "danger" : "secondary"}
-                    onClick={() => (ativo ? sair() : assistir(lig.id))}
-                    icon={ativo ? <EyeSlashIcon weight="fill" /> : <EyeIcon weight="fill" />}
+                <li key={lig.id}>
+                  <button
+                    type="button"
+                    onClick={() => assistir(lig.id)}
+                    disabled={!on && !sel}
+                    className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${
+                      sel ? "bg-accent/15 ring-1 ring-accent/40" : on ? "hover:bg-white/[0.05]" : "cursor-not-allowed opacity-45"
+                    }`}
                   >
-                    {ativo ? "Parar" : "Assistir"}
-                  </Button>
+                    <span className="relative flex size-2.5 shrink-0">
+                      {on && <span className="absolute inline-flex size-full animate-ping rounded-full bg-danger/60" />}
+                      <span className={`relative inline-flex size-2.5 rounded-full ${on ? "bg-danger" : "bg-white/20"}`} />
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-[13.5px] font-medium text-fg">{lig.nome}</span>
+                    <span className={`text-[11px] font-medium ${on ? "text-danger" : "text-fg-subtle"}`}>
+                      {on ? "AO VIVO" : "offline"}
+                    </span>
+                  </button>
                 </li>
               );
             })}
           </ul>
         )}
       </Card>
+
+      <div ref={playerRef} className="relative flex min-h-[60vh] flex-col overflow-hidden rounded-2xl border border-line bg-black">
+        <video ref={videoRef} autoPlay playsInline muted={muted} className={`h-full w-full flex-1 object-contain ${assistindo && aoVivo ? "" : "hidden"}`} />
+
+        {(!assistindo || !aoVivo) && (
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
+            <div className="flex size-14 items-center justify-center rounded-2xl bg-white/[0.05] text-fg-subtle">
+              <MonitorIcon size={28} />
+            </div>
+            {!assistindo ? (
+              <>
+                <p className="text-[15px] font-semibold text-fg">Escolha um ligador ao vivo</p>
+                <p className="max-w-sm text-[13px] text-fg-subtle">
+                  Quem está com o ponto vermelho piscando está transmitindo agora. Clique pra assistir.
+                </p>
+              </>
+            ) : estado === "encerrou" || !atualOnline ? (
+              <>
+                <p className="text-[15px] font-semibold text-fg">{atual?.nome} parou de transmitir</p>
+                <p className="text-[13px] text-fg-subtle">Quando ele voltar, a imagem aparece aqui sozinha.</p>
+              </>
+            ) : estado === "caiu" ? (
+              <>
+                <p className="text-[15px] font-semibold text-fg">A conexão caiu</p>
+                <button
+                  type="button"
+                  onClick={() => { setEstado("conectando"); painelRef.current?.reconectar(); }}
+                  className="mt-1 inline-flex h-9 items-center gap-2 rounded-full bg-accent px-4 text-[13px] font-semibold text-accent-fg"
+                >
+                  <ArrowClockwiseIcon size={15} weight="bold" /> Reconectar
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="size-6 animate-spin rounded-full border-2 border-white/15 border-t-accent" />
+                <p className="text-[13px] text-fg-subtle">Conectando com {atual?.nome}…</p>
+              </>
+            )}
+          </div>
+        )}
+
+        {assistindo && (
+          <>
+            <div className="absolute inset-x-0 top-0 flex items-center justify-between bg-gradient-to-b from-black/80 to-transparent p-3">
+              <div className="flex items-center gap-2 rounded-full bg-black/60 px-3 py-1.5 text-[12.5px] font-medium text-white backdrop-blur-sm">
+                <CircleIcon size={8} weight="fill" className={aoVivo ? "animate-pulse text-danger" : "text-white/40"} />
+                {atual?.nome}
+                {aoVivo && <span className="text-danger">· AO VIVO</span>}
+              </div>
+              <button
+                type="button"
+                onClick={sair}
+                aria-label="Fechar"
+                className="flex size-9 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm hover:bg-black/80"
+              >
+                <XIcon size={16} weight="bold" />
+              </button>
+            </div>
+
+            <div className="absolute inset-x-0 bottom-0 flex flex-wrap items-center justify-center gap-2 bg-gradient-to-t from-black/85 to-transparent p-4">
+              <button
+                type="button"
+                onClick={alternarFala}
+                disabled={!aoVivo}
+                className={`inline-flex h-11 items-center gap-2 rounded-full px-5 text-[13.5px] font-semibold transition-all active:scale-95 disabled:opacity-40 ${
+                  falando ? "bg-danger text-white shadow-[0_0_24px_-4px_rgb(241_120_125/0.8)]" : "bg-white text-black hover:bg-white/90"
+                }`}
+              >
+                {falando ? <MicrophoneIcon size={18} weight="fill" className="animate-pulse" /> : <MicrophoneSlashIcon size={18} weight="fill" />}
+                {falando ? "Falando com o ligador — clique pra parar" : "Falar com o ligador"}
+              </button>
+              <button
+                type="button"
+                onClick={alternarSom}
+                aria-label={muted ? "Ativar som" : "Mutar"}
+                className="flex size-11 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-sm hover:bg-white/25"
+              >
+                {muted ? <SpeakerSimpleSlashIcon size={18} /> : <SpeakerSimpleHighIcon size={18} />}
+              </button>
+              <button
+                type="button"
+                onClick={telaCheia}
+                aria-label="Tela cheia"
+                className="flex size-11 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-sm hover:bg-white/25"
+              >
+                <CornersOutIcon size={18} />
+              </button>
+            </div>
+            {erroMic && (
+              <p className="absolute bottom-20 left-1/2 -translate-x-1/2 rounded-full bg-danger/90 px-4 py-1.5 text-[12.5px] text-white">{erroMic}</p>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }

@@ -7,6 +7,7 @@ import {
   CircleIcon,
   WifiHighIcon,
   WifiSlashIcon,
+  MicrophoneIcon,
 } from "@phosphor-icons/react/dist/ssr";
 import {
   suportaTransmissao,
@@ -17,6 +18,7 @@ export function TransmissaoCard({ ligadorId, onMudou }: { ligadorId: string; onM
   const [transmitindo, setTransmitindo] = useState(false);
   const [conectado, setConectado] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [adminFalando, setAdminFalando] = useState(false);
   const [suporta] = useState(() => suportaTransmissao());
   const pararRef = useRef<(() => void) | null>(null);
 
@@ -31,6 +33,7 @@ export function TransmissaoCard({ ligadorId, onMudou }: { ligadorId: string; onM
           pararRef.current = null;
         },
         onConexao: (ok) => setConectado(ok),
+        onAdminFalando: setAdminFalando,
       });
       pararRef.current = parar;
       setTransmitindo(true);
@@ -77,6 +80,12 @@ export function TransmissaoCard({ ligadorId, onMudou }: { ligadorId: string; onM
         </p>
       </div>
       <div className="p-4">
+        {adminFalando && (
+          <p className="mb-3 flex items-center gap-2 rounded-lg border border-[#7C3AED]/40 bg-[#7C3AED]/15 px-3 py-2 text-[12.5px] font-medium text-[#C4B5FD]">
+            <MicrophoneIcon size={14} weight="fill" className="animate-pulse" />
+            O admin está falando com você
+          </p>
+        )}
         {erro && (
           <p className="mb-3 rounded-lg border border-[#f1787d]/20 bg-[#f1787d]/10 p-3 text-[13px] text-[#f1787d]">{erro}</p>
         )}
