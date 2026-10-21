@@ -74,20 +74,37 @@ export default function GanhadorPage() {
   }
 
   return (
-    <div className="theme-familhao flex min-h-[100dvh] flex-col">
+    <div className="theme-familhao flex min-h-[100dvh] flex-col overflow-hidden">
       <header className="flex justify-center px-4 pt-6 pb-2">
         <FamilhaoLogo />
       </header>
 
-      <main className="flex flex-1 flex-col items-center justify-center px-4 pb-12">
-        {estagio === "form" && (
-          <FormCpf cpf={cpf} setCpf={setCpf} erro={erro} onSubmit={consultar} />
-        )}
-        {estagio === "carregando" && <BarraProgresso progresso={progresso} />}
-        {estagio === "erro" && <TelaErro erro={erro} onVoltar={voltar} />}
-        {estagio === "resultado" && dados && (
-          <Celebracao dados={dados} onVoltar={voltar} />
-        )}
+      <main className="flex flex-1 flex-col items-center px-4 pb-12">
+        {/* Personagens — 3 lado a lado acima do formulário */}
+        <div className="mt-2 flex justify-center sm:mt-4">
+          <div className="w-[240px] sm:w-[280px] md:w-[320px]">
+            <Image
+              src="/familhao/ivete.webp"
+              alt=""
+              width={320}
+              height={400}
+              className="h-auto w-full object-contain"
+              priority
+              style={{ maskImage: "radial-gradient(ellipse 75% 75% at 50% 45%, black 50%, transparent 100%)" }}
+            />
+          </div>
+        </div>
+
+        <div className="mt-6 w-full max-w-md sm:mt-8">
+          {estagio === "form" && (
+            <FormCpf cpf={cpf} setCpf={setCpf} erro={erro} onSubmit={consultar} />
+          )}
+          {estagio === "carregando" && <BarraProgresso progresso={progresso} />}
+          {estagio === "erro" && <TelaErro erro={erro} onVoltar={voltar} />}
+          {estagio === "resultado" && dados && (
+            <Celebracao dados={dados} onVoltar={voltar} />
+          )}
+        </div>
       </main>
     </div>
   );
