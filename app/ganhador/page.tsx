@@ -3,8 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { consultarCpf, enviarPixChave, type DadosGanhador } from "./actions";
-import confetti from "canvas-confetti";
-
 type Estagio = "form" | "carregando" | "resultado" | "erro";
 
 function maskCpf(v: string) {
@@ -185,40 +183,117 @@ function TelaErro({ erro, onVoltar }: { erro: string; onVoltar: () => void }) {
   );
 }
 
-function GoldBar() {
-  return (
-    <svg viewBox="0 0 120 80" className="w-20 sm:w-24" style={{ filter: "drop-shadow(0 0 20px rgb(255 215 0 / 0.6))" }}>
-      <defs>
-        <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#FFE066" />
-          <stop offset="30%" stopColor="#FFD700" />
-          <stop offset="60%" stopColor="#DAA520" />
-          <stop offset="100%" stopColor="#B8860B" />
-        </linearGradient>
-        <linearGradient id="goldTop" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#FFF3A0" />
-          <stop offset="50%" stopColor="#FFD700" />
-          <stop offset="100%" stopColor="#DAA520" />
-        </linearGradient>
-        <linearGradient id="shine" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="rgba(255,255,255,0.5)" />
-          <stop offset="100%" stopColor="rgba(255,255,255,0)" />
-        </linearGradient>
-      </defs>
-      {/* top face */}
-      <polygon points="30,20 90,20 105,35 15,35" fill="url(#goldTop)" />
-      {/* front face */}
-      <polygon points="15,35 105,35 100,70 20,70" fill="url(#gold)" />
-      {/* left face */}
-      <polygon points="15,35 20,70 20,70 15,35" fill="#B8860B" />
-      {/* right face */}
-      <polygon points="105,35 100,70 100,70 105,35" fill="#996515" />
-      {/* shine */}
-      <polygon points="32,22 70,22 80,34 20,34" fill="url(#shine)" opacity="0.6" />
-      {/* M logo */}
-      <text x="60" y="57" textAnchor="middle" fontSize="18" fontWeight="900" fill="#5300AA" fontFamily="sans-serif" opacity="0.7">M</text>
-    </svg>
-  );
+function chuvaDeDinheiro() {
+  const canvas = document.createElement("canvas");
+  canvas.style.cssText = "position:fixed;inset:0;z-index:9999;pointer-events:none;";
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  document.body.appendChild(canvas);
+  const ctx = canvas.getContext("2d")!;
+
+  const notas: { x: number; y: number; vx: number; vy: number; rot: number; vr: number; s: number; opacity: number }[] = [];
+  for (let i = 0; i < 50; i++) {
+    notas.push({
+      x: Math.random() * canvas.width,
+      y: -Math.random() * canvas.height * 1.5,
+      vx: (Math.random() - 0.5) * 2,
+      vy: 2 + Math.random() * 3,
+      rot: Math.random() * Math.PI * 2,
+      vr: (Math.random() - 0.5) * 0.08,
+      s: 0.5 + Math.random() * 0.5,
+      opacity: 0.7 + Math.random() * 0.3,
+    });
+  }
+
+  function drawNota(n: (typeof notas)[0]) {
+    ctx.save();
+    ctx.translate(n.x, n.y);
+    ctx.rotate(n.rot);
+    ctx.scale(n.s, n.s);
+    ctx.globalAlpha = n.opacity;
+
+    // nota de 100
+    const w = 60, h = 28;
+    ctx.fillStyle = "#2E8B57";
+    ctx.beginPath();
+    ctx.roundRect(-w / 2, -h / 2, w, h, 3);
+    ctx.fill();
+    ctx.fillStyle = "#90EE90";
+    ctx.beginPath();
+    ctx.roundRect(-w / 2 + 2, -h / 2 + 2, w - 4, h - 4, 2);
+    ctx.fill();
+    ctx.fillStyle = "#006400";
+    ctx.font = "bold 14px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("R$", -10, -1);
+    ctx.font = "bold 16px sans-serif";
+    ctx.fillText("100", 12, 0);
+
+    ctx.restore();
+  }
+
+  const inicio = Date.now();
+  const duracao = 6000;
+  function frame() {
+    const t = Date.now() - inicio;
+    if (t > duracao) { canvas.remove(); return; }
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const fade = t > duracao - 1000 ? (duracao - t) / 1000 : 1;
+    for (const n of notas) {
+      n.x += n.vx;
+      n.y += n.vy;
+      n.rot += n.vr;
+      n.vx += (Math.random() - 0.5) * 0.3;
+      n.opacity = (0.7 + Math.random() * 0.3) * fade;
+      if (n.y > canvas.height + 50) { n.y = -40; n.x = Math.random() * canvas.width; }
+      drawNota(n);
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+function tocarSomDinheiro() {
+  try {
+    const ac = new AudioContext();
+
+    // som de moedas/caixa eletrônico
+    function coin(delay: number) {
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.connect(gain);
+      gain.connect(ac.destination);
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(2400, ac.currentTime + delay);
+      osc.frequency.exponentialRampToValueAtTime(800, ac.currentTime + delay + 0.15);
+      gain.gain.setValueAtTime(0.15, ac.currentTime + delay);
+      gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + delay + 0.3);
+      osc.start(ac.currentTime + delay);
+      osc.stop(ac.currentTime + delay + 0.3);
+    }
+
+    // sequência rápida tipo caixa eletrônico contando dinheiro
+    for (let i = 0; i < 8; i++) coin(i * 0.12);
+
+    // "cha-ching" final
+    setTimeout(() => {
+      const osc1 = ac.createOscillator();
+      const osc2 = ac.createOscillator();
+      const g1 = ac.createGain();
+      const g2 = ac.createGain();
+      osc1.connect(g1); g1.connect(ac.destination);
+      osc2.connect(g2); g2.connect(ac.destination);
+      osc1.type = "sine"; osc2.type = "triangle";
+      osc1.frequency.value = 1568; osc2.frequency.value = 2093;
+      g1.gain.setValueAtTime(0.2, ac.currentTime);
+      g2.gain.setValueAtTime(0.12, ac.currentTime);
+      g1.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.8);
+      g2.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.8);
+      osc1.start(); osc2.start();
+      osc1.stop(ac.currentTime + 0.8); osc2.stop(ac.currentTime + 0.8);
+    }, 1200);
+  } catch { /* audio blocked */ }
 }
 
 function Celebracao({ dados, onVoltar }: { dados: DadosGanhador; onVoltar: () => void }) {
@@ -248,28 +323,23 @@ function Celebracao({ dados, onVoltar }: { dados: DadosGanhador; onVoltar: () =>
 
   const valorPremio = dadosAtuais.premio?.valor ?? 0;
 
-  const dispararConfetti = useCallback(() => {
+  const dispararEfeitos = useCallback(() => {
     if (confettiDisparado.current) return;
     confettiDisparado.current = true;
-    const end = Date.now() + 5000;
-    const cores = ["#FFD700", "#FFA500", "#D04AFF", "#FF52CF", "#E498FF", "#ffffff"];
-    (function frame() {
-      confetti({ particleCount: 4, angle: 60, spread: 65, origin: { x: 0, y: 0.6 }, colors: cores, gravity: 0.8, scalar: 1.1 });
-      confetti({ particleCount: 4, angle: 120, spread: 65, origin: { x: 1, y: 0.6 }, colors: cores, gravity: 0.8, scalar: 1.1 });
-      if (Date.now() < end) requestAnimationFrame(frame);
-    })();
+    chuvaDeDinheiro();
+    tocarSomDinheiro();
   }, []);
 
   useEffect(() => {
     const timers = [
-      setTimeout(() => { setEtapa(1); dispararConfetti(); }, 200),
+      setTimeout(() => { setEtapa(1); dispararEfeitos(); }, 200),
       setTimeout(() => setEtapa(2), 1400),
       setTimeout(() => setEtapa(3), 2200),
       setTimeout(() => setEtapa(4), 3000),
       setTimeout(() => setEtapa(5), 3800),
     ];
     return () => timers.forEach(clearTimeout);
-  }, [dispararConfetti]);
+  }, [dispararEfeitos]);
 
   useEffect(() => {
     if (etapa < 5 || !valorPremio) return;
@@ -319,20 +389,17 @@ function Celebracao({ dados, onVoltar }: { dados: DadosGanhador; onVoltar: () =>
 
       {etapa >= 1 && (
         <div className="relative z-10 text-center" style={{ animation: "celebracao-entrada 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both" }}>
-          <div className="mb-3 flex justify-center" style={{ animation: "lingote-spin 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both" }}>
-            <GoldBar />
+          <div className="mb-1 text-5xl" style={{ animation: "emoji-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both" }}>
+            💰
           </div>
           <div className="flex items-center justify-center gap-2">
-            <span className="celebracao-estrela text-lg" style={{ animationDelay: "0.3s" }}>✦</span>
-            <h1
-              className="bg-gradient-to-r from-[#FFE066] via-[#FFD700] to-[#FFA500] bg-clip-text text-4xl font-black tracking-tight text-transparent sm:text-5xl"
-              style={{ textShadow: "0 0 40px rgb(255 215 0 / 0.4)", WebkitTextStroke: "0" }}
-            >
-              PARABÉNS!
+            <span className="celebracao-estrela text-base" style={{ animationDelay: "0.3s" }}>✦</span>
+            <h1 className="parabens-glow bg-gradient-to-r from-[#FFE066] via-[#FFD700] to-[#FFA500] bg-clip-text text-5xl font-black uppercase italic tracking-tight text-transparent sm:text-6xl">
+              Parabéns!
             </h1>
-            <span className="celebracao-estrela text-lg" style={{ animationDelay: "0.5s" }}>✦</span>
+            <span className="celebracao-estrela text-base" style={{ animationDelay: "0.5s" }}>✦</span>
           </div>
-          <p className="mt-2 text-base font-medium text-[#FFE066]/80">
+          <p className="mt-2 text-base font-bold text-[#FFE066]/90">
             Você foi contemplado no Familhão!
           </p>
         </div>
@@ -461,10 +528,14 @@ function Celebracao({ dados, onVoltar }: { dados: DadosGanhador; onVoltar: () =>
           0% { opacity: 0; transform: scale(0.5) translateY(30px); }
           100% { opacity: 1; transform: scale(1) translateY(0); }
         }
-        @keyframes lingote-spin {
-          0% { opacity: 0; transform: scale(0) rotateY(180deg); }
-          60% { transform: scale(1.2) rotateY(-10deg); }
-          100% { opacity: 1; transform: scale(1) rotateY(0deg); }
+        @keyframes emoji-pop {
+          0% { opacity: 0; transform: scale(0) rotate(-20deg); }
+          50% { transform: scale(1.4) rotate(5deg); }
+          70% { transform: scale(0.9) rotate(-3deg); }
+          100% { opacity: 1; transform: scale(1) rotate(0deg); }
+        }
+        .parabens-glow {
+          filter: drop-shadow(0 0 20px rgb(255 215 0 / 0.5)) drop-shadow(0 0 60px rgb(255 165 0 / 0.3));
         }
         @keyframes celebracao-card {
           0% { opacity: 0; transform: translateY(20px) scale(0.95); }
