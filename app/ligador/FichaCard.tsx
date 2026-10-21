@@ -21,10 +21,10 @@ export function FichaCard({ ficha }: { ficha: FichaLista }) {
       {/* Top row: info + contact + actions in columns */}
       <div className="grid items-start gap-4 p-4 lg:grid-cols-[1fr_auto_1fr]">
         {/* Col 1: Identity */}
-        <Link href={`/ligador/ficha/${ficha.id}`} className="group min-w-0">
+        <div className="min-w-0">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <p className="font-medium text-white/90">{ficha.nome}</p>
+              <Link href={`/ligador/ficha/${ficha.id}`} className="font-medium text-white/90 hover:text-white">{ficha.nome}</Link>
               <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 font-mono text-[12.5px] tabular-nums text-white/40">
                 {formatCPF(ficha.cpf)}
                 {ficha.telefone && (
@@ -57,7 +57,6 @@ export function FichaCard({ ficha }: { ficha: FichaLista }) {
                     href={wa}
                     target="_blank"
                     rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
                     className="flex h-8 items-center gap-1.5 rounded-lg border border-[#4ade80]/30 bg-[#4ade80]/10 px-3 text-[12px] font-medium text-[#4ade80] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] transition-colors duration-200 hover:bg-[#4ade80]/15"
                   >
                     <WhatsappLogoIcon size={14} weight="fill" />
@@ -68,7 +67,6 @@ export function FichaCard({ ficha }: { ficha: FichaLista }) {
                   <a
                     href={tel}
                     aria-label="Ligar"
-                    onClick={(e) => e.stopPropagation()}
                     className="flex size-8 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.04] text-white/40 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] transition-colors duration-200 hover:bg-white/[0.08] hover:text-white/60"
                   >
                     <PhoneIcon size={14} weight="fill" />
@@ -76,12 +74,12 @@ export function FichaCard({ ficha }: { ficha: FichaLista }) {
                 )}
               </div>
             )}
-            <span className="inline-flex h-8 items-center gap-1 rounded-lg border border-[#7C3AED]/40 bg-[#7C3AED]/15 px-2.5 text-[12px] font-medium text-[#C4B5FD] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)] transition-transform duration-200 group-hover:translate-x-0.5">
+            <Link href={`/ligador/ficha/${ficha.id}`} className="inline-flex h-8 items-center gap-1 rounded-lg border border-[#7C3AED]/40 bg-[#7C3AED]/15 px-2.5 text-[12px] font-medium text-[#C4B5FD] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)] transition-colors duration-200 hover:bg-[#7C3AED]/25">
               Ver ficha
               <CaretRightIcon size={12} weight="bold" />
-            </span>
+            </Link>
           </div>
-        </Link>
+        </div>
 
         {/* Col 2: Status (desktop) + divider */}
         <div className="hidden items-center self-center lg:flex">
