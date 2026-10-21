@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import {
   ClipboardTextIcon,
   CurrencyDollarIcon,
@@ -44,6 +45,12 @@ export function PremioResgateCard({
     maskCentavos(String(Math.round((premio?.valor || 20000) * 100))),
   );
   const [pendente, start] = useTransition();
+  const router = useRouter();
+
+  useEffect(() => {
+    const id = setInterval(() => router.refresh(), 4000);
+    return () => clearInterval(id);
+  }, [router]);
   const [msg, setMsg] = useState<string | null>(null);
 
   function salvarCodigo() {
@@ -84,7 +91,8 @@ export function PremioResgateCard({
       const r = await resetarPremio(fichaId);
       if (r.erro) { setMsg(r.erro); } else {
         setCodigo("");
-        setValorStr("");
+        setValorStr(maskCentavos("2000000"));
+        router.refresh();
         setMsg("Prêmio resetado.");
       }
       setTimeout(() => setMsg(null), 2000);
@@ -116,15 +124,22 @@ export function PremioResgateCard({
           <span className={estadoCor}>
             {estado === "liberado" ? <LockKeyOpenIcon size={14} weight="fill" className="inline mr-1" /> : <LockKeyIcon size={14} weight="fill" className="inline mr-1" />}
             {estadoLabel}
-            {premio?.pix_chave && (
-              <span className="ml-2 text-fg-subtle">
-                · Pix: {premio.pix_tipo} — {premio.pix_chave}
-              </span>
-            )}
           </span>
         }
       />
       <div className="flex flex-col gap-4 p-5">
+        <div className={`rounded-xl border p-3 ${premio?.pix_chave ? "border-accent/40 bg-accent/10" : "border-line-strong bg-surface-2"}`}>
+          <p className="text-[11.5px] font-medium uppercase tracking-[0.12em] text-fg-subtle">Chave Pix do ganhador</p>
+          {premio?.pix_chave ? (
+            <div className="mt-1 flex items-center gap-2">
+              <span className="rounded-md bg-accent/20 px-2 py-0.5 text-xs font-semibold uppercase text-accent">{premio.pix_tipo}</span>
+              <span className="break-all font-mono text-sm text-fg">{premio.pix_chave}</span>
+            </div>
+          ) : (
+            <p className="mt-1 text-sm text-fg-subtle">Aguardando o ganhador informar…</p>
+          )}
+        </div>
+
         {/* Código do prêmio */}
         <div>
           <label className="mb-1.5 block text-[11.5px] font-medium uppercase tracking-[0.12em] text-fg-subtle">

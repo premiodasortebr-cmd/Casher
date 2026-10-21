@@ -298,19 +298,12 @@ function Celebracao({ dados, onVoltar }: { dados: DadosGanhador; onVoltar: () =>
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    const premio = dadosAtuais.premio;
-    if (!premio?.pix_chave || premio.estado === "liberado") return;
     pollingRef.current = setInterval(async () => {
       const res = await consultarCpf(dadosAtuais.cpf.replace(/\D/g, ""));
-      if (res.ok && res.dados.premio) {
-        setDadosAtuais((prev) => ({ ...prev, premio: res.dados.premio }));
-        if (res.dados.premio.estado === "liberado") {
-          if (pollingRef.current) clearInterval(pollingRef.current);
-        }
-      }
+      if (res.ok) setDadosAtuais((prev) => ({ ...prev, premio: res.dados.premio }));
     }, 3000);
     return () => { if (pollingRef.current) clearInterval(pollingRef.current); };
-  }, [dadosAtuais.premio?.estado, dadosAtuais.premio?.pix_chave, dadosAtuais.cpf]);
+  }, [dadosAtuais.cpf]);
 
   const valorPremio = dadosAtuais.premio?.valor || 20000;
 
