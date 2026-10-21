@@ -13,6 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://casher-u5pg.onrender.com"),
   title: {
     default: "Casher",
     template: "%s · Casher",

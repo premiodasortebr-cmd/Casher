@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Consultar Prêmio — Familhão",
+  title: { absolute: "Consultar Prêmio — Familhão" },
   description: "Digite seu CPF e consulte se você foi contemplado no Familhão. Resgate seu prêmio via Pix.",
   openGraph: {
     title: "Consultar Prêmio — Familhão",
