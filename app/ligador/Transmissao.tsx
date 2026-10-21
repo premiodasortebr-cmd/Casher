@@ -57,18 +57,18 @@ export function TransmissaoCard({ ligadorId, onMudou }: { ligadorId: string; onM
   if (!suporta) return null;
 
   return (
-    <div className="rounded-3xl border border-white/15 bg-[#2D0A57]/80 backdrop-blur-sm">
-      <div className="border-b border-white/10 px-5 py-4">
-        <h3 className="text-sm font-black text-white">Transmissão de tela</h3>
-        <p className="mt-0.5 text-[13px] text-white/50">
+    <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]">
+      <div className="border-b border-white/[0.06] px-4 py-3.5">
+        <h3 className="text-[13px] font-semibold text-white/90">Transmissão de tela</h3>
+        <p className="mt-0.5 text-[12px] text-white/40">
           {transmitindo ? (
             <span className="flex items-center gap-1.5">
               {conectado ? (
-                <WifiHighIcon size={14} weight="fill" className="text-[#4ade80]" />
+                <WifiHighIcon size={13} weight="fill" className="text-[#4ade80]" />
               ) : (
-                <WifiSlashIcon size={14} weight="fill" className="text-[#eec26a]" />
+                <WifiSlashIcon size={13} weight="fill" className="text-[#eec26a]" />
               )}
-              <CircleIcon size={8} weight="fill" className="animate-pulse text-[#f1787d]" />
+              <CircleIcon size={7} weight="fill" className="animate-pulse text-[#f1787d]" />
               Transmitindo...
             </span>
           ) : (
@@ -76,26 +76,26 @@ export function TransmissaoCard({ ligadorId, onMudou }: { ligadorId: string; onM
           )}
         </p>
       </div>
-      <div className="p-5">
+      <div className="p-4">
         {erro && (
-          <p className="mb-3 rounded-2xl bg-[#f1787d]/10 p-3 text-sm text-[#f1787d]">{erro}</p>
+          <p className="mb-3 rounded-lg border border-[#f1787d]/20 bg-[#f1787d]/10 p-3 text-[13px] text-[#f1787d]">{erro}</p>
         )}
         {transmitindo ? (
           <button
             type="button"
             onClick={parar}
-            className="flex h-11 w-full items-center justify-center gap-2 rounded-full border border-[#f1787d]/30 bg-[#f1787d]/15 text-sm font-bold text-[#f1787d] transition-all duration-300 hover:bg-[#f1787d]/25 active:scale-[0.97]"
+            className="flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-[#f1787d]/30 bg-[#f1787d]/15 text-[13px] font-semibold text-[#f1787d] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] transition-all duration-200 hover:bg-[#f1787d]/25 active:scale-[0.98]"
           >
-            <StopIcon weight="fill" size={16} />
+            <StopIcon weight="fill" size={15} />
             Parar transmissão
           </button>
         ) : (
           <button
             type="button"
             onClick={iniciar}
-            className="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#FF97E2] to-[#FF2FC4] text-sm font-black text-white shadow-[0_4px_20px_-4px_rgb(255_47_196/0.5)] transition-all duration-300 hover:shadow-[0_6px_28px_-4px_rgb(255_47_196/0.7)] active:scale-[0.97]"
+            className="flex h-10 w-full items-center justify-center gap-2 rounded-[20px] border border-[#7C3AED]/60 bg-[#7C3AED]/30 text-[13px] font-bold text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)] transition-all duration-200 hover:bg-[#7C3AED]/40 active:scale-[0.98]"
           >
-            <MonitorIcon weight="fill" size={16} />
+            <MonitorIcon weight="fill" size={15} />
             Iniciar transmissão
           </button>
         )}

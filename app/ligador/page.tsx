@@ -1,9 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { redirect } from "next/navigation";
-import { SignOutIcon, TicketIcon } from "@phosphor-icons/react/dist/ssr";
-import { Avatar } from "@/components/ui/Avatar";
-import { Card } from "@/components/ui/Card";
+import { SignOutIcon, TicketIcon, MagnifyingGlassIcon } from "@phosphor-icons/react/dist/ssr";
 import { Pagination } from "@/components/ui/Pagination";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { requireLigadorSession } from "@/lib/auth/guard";
@@ -68,6 +66,7 @@ export default async function LigadorHomePage({ searchParams }: { searchParams: 
     deu_bom: resumo?.deu_bom ?? 0,
     deu_ruim: resumo?.deu_ruim ?? 0,
   };
+  const totalFichas = contagem.pendente + contagem.deu_bom + contagem.deu_ruim;
   const abas: { chave: Aba; label: string; n: number }[] = [
     { chave: "fila", label: "Fila", n: contagem.pendente },
     { chave: "retornar", label: "Retornar", n: retornar ?? 0 },
@@ -75,71 +74,67 @@ export default async function LigadorHomePage({ searchParams }: { searchParams: 
   ];
 
   return (
-    <div className="theme-familhao min-h-[100dvh]">
-      <header className="sticky top-0 z-30 border-b border-white/15 bg-[#5300AA]/90 px-4 py-3.5 backdrop-blur-xl sm:px-6">
-        <div className="mx-auto flex max-w-2xl items-center justify-between">
+    <div className="min-h-[100dvh] bg-black">
+      {/* Header — MaxScale style: black/60 blur, subtle border */}
+      <header className="sticky top-0 z-30 border-b border-white/[0.08] bg-black/60 backdrop-blur-md">
+        <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-5">
           <Link href={BASE} aria-label="Início">
-            <Image src="/familhao/logo.webp" alt="Familhão" width={130} height={30} priority className="h-7 w-auto sm:h-8" />
+            <Image src="/familhao/logo.webp" alt="Familhão" width={130} height={30} priority className="h-7 w-auto" />
           </Link>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2.5">
-              <Avatar nome={sessao.nome} size="sm" />
-              <span className="hidden text-[13.5px] font-medium text-white/90 sm:inline">{sessao.nome}</span>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5 rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]">
+              <div className="flex size-7 items-center justify-center rounded-md bg-[#7C3AED]/30 text-xs font-bold text-[#C4B5FD]">
+                {sessao.nome.charAt(0).toUpperCase()}
+              </div>
+              <span className="text-[13px] font-medium text-white/80">{sessao.nome}</span>
             </div>
             <form action={sairLigador}>
               <button
                 type="submit"
                 aria-label="Sair"
                 title="Sair"
-                className="flex size-8 items-center justify-center rounded-full text-white/50 transition-colors duration-300 hover:bg-white/10 hover:text-white"
+                className="flex size-9 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.04] text-white/40 transition-colors duration-200 hover:bg-white/[0.08] hover:text-white/70 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]"
               >
-                <SignOutIcon size={17} />
+                <SignOutIcon size={16} />
               </button>
             </form>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto flex max-w-2xl flex-col gap-5 px-4 py-6 sm:px-6">
+      <main className="mx-auto flex max-w-5xl flex-col gap-5 px-5 py-6">
         <TransmissaoGate ligadorId={sessao.ligadorId}>
 
-        <div className="animate-fade-up rounded-3xl border border-[#D04AFF]/30 bg-[#2D0A57]/80 px-5 py-4 backdrop-blur-sm [animation-delay:40ms]">
-          <div className="flex items-end justify-between gap-3">
-            <div>
-              <p className="text-[12px] font-black uppercase tracking-[0.14em] text-[#DFC0FF]">Sua fila</p>
-              <p className="mt-1 font-mono text-[34px] font-medium leading-none tracking-[-0.04em] tabular-nums text-white">
-                {formatNumero(contagem.pendente)}
-                <span className="ml-2 text-[14px] font-normal tracking-normal text-white/60">pendentes</span>
-              </p>
-            </div>
-            <p className="text-right text-[12.5px] text-white/50">
-              {formatNumero(contagem.deu_bom)} deu bom
-              <br />
-              {formatNumero(contagem.deu_ruim)} deu ruim
-            </p>
+        {/* Stats — MaxScale card style */}
+        <div className="grid grid-cols-3 gap-3">
+          <StatCard label="Pendentes" value={contagem.pendente} color="#A855F7" />
+          <StatCard label="Deu bom" value={contagem.deu_bom} color="#4ade80" />
+          <StatCard label="Deu ruim" value={contagem.deu_ruim} color="#f1787d" />
+        </div>
+
+        {/* Progress bar */}
+        <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-4">
+          <div className="flex gap-1 overflow-hidden rounded-full">
+            {totalFichas === 0 ? (
+              <div className="h-1.5 flex-1 rounded-full bg-white/[0.06]" />
+            ) : (
+              <>
+                {contagem.pendente > 0 && <div className="h-1.5 rounded-full bg-[#A855F7]" style={{ flex: contagem.pendente }} />}
+                {contagem.deu_bom > 0 && <div className="h-1.5 rounded-full bg-[#4ade80]" style={{ flex: contagem.deu_bom }} />}
+                {contagem.deu_ruim > 0 && <div className="h-1.5 rounded-full bg-[#f1787d]" style={{ flex: contagem.deu_ruim }} />}
+              </>
+            )}
           </div>
-          <div className="mt-4 flex gap-1 overflow-hidden rounded-full">
-            {(() => {
-              const t = contagem.pendente + contagem.deu_bom + contagem.deu_ruim;
-              if (t === 0) return <div className="h-2 flex-1 rounded-full bg-white/10" />;
-              return (
-                <>
-                  {contagem.pendente > 0 && <div className="h-2 rounded-full bg-[#D04AFF]" style={{ flex: contagem.pendente }} />}
-                  {contagem.deu_bom > 0 && <div className="h-2 rounded-full bg-[#4ade80]" style={{ flex: contagem.deu_bom }} />}
-                  {contagem.deu_ruim > 0 && <div className="h-2 rounded-full bg-[#f1787d]" style={{ flex: contagem.deu_ruim }} />}
-                </>
-              );
-            })()}
-          </div>
-          <div className="mt-2 flex gap-4 text-[11px] text-white/50">
-            <span className="flex items-center gap-1.5"><span className="inline-block size-2 rounded-full bg-[#D04AFF]" />Pendente</span>
-            <span className="flex items-center gap-1.5"><span className="inline-block size-2 rounded-full bg-[#4ade80]" />Deu bom</span>
-            <span className="flex items-center gap-1.5"><span className="inline-block size-2 rounded-full bg-[#f1787d]" />Deu ruim</span>
+          <div className="mt-2.5 flex gap-5 text-[11px] text-white/40">
+            <span className="flex items-center gap-1.5"><span className="inline-block size-1.5 rounded-full bg-[#A855F7]" />Pendente</span>
+            <span className="flex items-center gap-1.5"><span className="inline-block size-1.5 rounded-full bg-[#4ade80]" />Deu bom</span>
+            <span className="flex items-center gap-1.5"><span className="inline-block size-1.5 rounded-full bg-[#f1787d]" />Deu ruim</span>
           </div>
         </div>
 
-        <div className="flex flex-col gap-3">
-          <nav className="-mx-4 flex gap-1.5 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0">
+        {/* Tabs + search — MaxScale nav style */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <nav className="flex gap-1.5">
             {abas.map((a) => {
               const on = a.chave === aba;
               return (
@@ -147,30 +142,33 @@ export default async function LigadorHomePage({ searchParams }: { searchParams: 
                   key={a.chave}
                   href={montarQuery(BASE, { q, aba: a.chave === "fila" ? "" : a.chave })}
                   scroll={false}
-                  className={`flex h-9 shrink-0 items-center gap-2 rounded-full border px-3.5 text-[13px] transition-colors duration-300 ${
+                  className={`flex h-9 items-center gap-2 rounded-lg border px-3.5 text-[13px] font-medium transition-all duration-200 ${
                     on
-                      ? "border-[#D04AFF]/50 bg-[#D04AFF]/20 text-[#E498FF]"
-                      : "border-white/10 bg-white/5 text-white/60 hover:text-white"
+                      ? "border-[#7C3AED]/60 bg-[#7C3AED]/30 text-[#C4B5FD] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)]"
+                      : "border-white/[0.08] bg-white/[0.04] text-white/50 hover:bg-white/[0.08] hover:text-white/70 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]"
                   }`}
                 >
                   {a.label}
-                  <span className={`font-mono text-[11.5px] tabular-nums ${on ? "text-[#E498FF]" : "text-white/40"}`}>{a.n}</span>
+                  <span className={`font-mono text-[11px] tabular-nums ${on ? "text-[#C4B5FD]/70" : "text-white/30"}`}>{a.n}</span>
                 </Link>
               );
             })}
           </nav>
-          <SearchInput placeholder="Buscar por nome, CPF ou telefone" />
+          <div className="w-full sm:w-64">
+            <SearchInput placeholder="Buscar nome, CPF ou telefone" />
+          </div>
         </div>
 
+        {/* List */}
         {(fichas ?? []).length === 0 ? (
-          <div className="rounded-3xl border border-white/10 bg-[#2D0A57]/60 p-8 text-center backdrop-blur-sm">
-            <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-[#D04AFF]/15 text-[#DFC0FF]">
+          <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-10 text-center">
+            <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-xl bg-[#7C3AED]/15 text-[#C4B5FD]">
               <TicketIcon size={24} />
             </div>
-            <p className="text-lg font-bold text-white">
+            <p className="text-base font-semibold text-white/90">
               {q ? "Nada encontrado" : aba === "fila" ? "Fila zerada" : aba === "retornar" ? "Ninguém pra retornar" : "Histórico vazio"}
             </p>
-            <p className="mt-1 text-sm text-white/50">
+            <p className="mt-1.5 text-[13px] text-white/40">
               {q
                 ? "Tenta outro nome ou número."
                 : aba === "fila"
@@ -181,7 +179,7 @@ export default async function LigadorHomePage({ searchParams }: { searchParams: 
             </p>
           </div>
         ) : (
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2.5">
             {(fichas ?? []).map((f) => (
               <FichaCard key={f.id} ficha={f} />
             ))}
@@ -189,12 +187,23 @@ export default async function LigadorHomePage({ searchParams }: { searchParams: 
         )}
 
         {total > POR_PAGINA && (
-          <Card>
+          <div className="rounded-xl border border-white/[0.08] bg-white/[0.02]">
             <Pagination pagina={pagina} porPagina={POR_PAGINA} total={total} href={(p) => montarQuery(BASE, filtros, { pagina: p })} />
-          </Card>
+          </div>
         )}
         </TransmissaoGate>
       </main>
+    </div>
+  );
+}
+
+function StatCard({ label, value, color }: { label: string; value: number; color: string }) {
+  return (
+    <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]">
+      <p className="text-[11px] font-medium uppercase tracking-[0.1em] text-white/40">{label}</p>
+      <p className="mt-1 font-mono text-2xl font-semibold tabular-nums" style={{ color }}>
+        {formatNumero(value)}
+      </p>
     </div>
   );
 }
