@@ -81,7 +81,7 @@ export default async function FichaPage({ params }: { params: Promise<{ fichaId:
   return (
     <div className="min-h-[100dvh]">
       <header className="sticky top-0 z-30 border-b border-line bg-canvas/85 px-4 py-3 backdrop-blur-xl sm:px-6">
-        <div className="mx-auto flex max-w-2xl items-center justify-between">
+        <div className="mx-auto flex max-w-[1500px] items-center justify-between">
           <Link
             href="/ligador"
             className="inline-flex h-9 items-center gap-1.5 rounded-full pr-3.5 pl-2.5 text-[13.5px] font-medium text-fg-muted transition-colors duration-300 ease-spring hover:bg-white/[0.05] hover:text-fg"
@@ -93,7 +93,9 @@ export default async function FichaPage({ params }: { params: Promise<{ fichaId:
         </div>
       </header>
 
-      <main className="mx-auto flex max-w-2xl flex-col gap-4 px-4 py-6 sm:px-6">
+      <main className="mx-auto max-w-[1500px] px-4 py-6 sm:px-6">
+        <div className="grid items-start gap-4 lg:grid-cols-3">
+        <div className="flex flex-col gap-4">
         <section className="animate-fade-up">
           <h1 className="text-[26px] font-semibold leading-tight tracking-[-0.03em] text-fg">{ficha.nome}</h1>
           {(wa || tel) && (
@@ -179,7 +181,9 @@ export default async function FichaPage({ params }: { params: Promise<{ fichaId:
             <DadosCliente fichaId={ficha.id} nomeInicial={ficha.nome} nascimentoInicial={ficha.nascimento} />
           </div>
         </Card>
+        </div>
 
+        <div className="flex flex-col gap-4">
         <div className="animate-fade-up [animation-delay:100ms]">
           <PremioResgateCard fichaId={ficha.id} premio={premio} />
         </div>
@@ -190,7 +194,9 @@ export default async function FichaPage({ params }: { params: Promise<{ fichaId:
             <FichaAcoes fichaId={ficha.id} status={ficha.status} observacao={ficha.observacao} />
           </div>
         </Card>
+        </div>
 
+        <div className="flex flex-col gap-4">
         <Card className="animate-fade-up [animation-delay:180ms]">
           <CardHeader
             title={`Compras${compras.length ? ` (${compras.length})` : ""}`}
@@ -257,6 +263,8 @@ export default async function FichaPage({ params }: { params: Promise<{ fichaId:
             </ul>
           )}
         </Card>
+        </div>
+        </div>
       </main>
     </div>
   );
