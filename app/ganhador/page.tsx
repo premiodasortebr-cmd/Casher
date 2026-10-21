@@ -191,8 +191,10 @@ function chuvaDeDinheiro() {
   document.body.appendChild(canvas);
   const ctx = canvas.getContext("2d")!;
 
-  const notas: { x: number; y: number; vx: number; vy: number; rot: number; vr: number; s: number; opacity: number }[] = [];
-  for (let i = 0; i < 50; i++) {
+  const img = new window.Image();
+  img.src = "/familhao/nota100.jpg";
+  const notas: { x: number; y: number; vx: number; vy: number; rot: number; vr: number; s: number; opacity: number; flip: number; vf: number }[] = [];
+  for (let i = 0; i < 40; i++) {
     notas.push({
       x: Math.random() * canvas.width,
       y: -Math.random() * canvas.height * 1.5,
@@ -201,7 +203,9 @@ function chuvaDeDinheiro() {
       rot: Math.random() * Math.PI * 2,
       vr: (Math.random() - 0.5) * 0.08,
       s: 0.5 + Math.random() * 0.5,
-      opacity: 0.7 + Math.random() * 0.3,
+      opacity: 1,
+      flip: Math.random() * Math.PI,
+      vf: 0.03 + Math.random() * 0.05,
     });
   }
 
@@ -212,23 +216,9 @@ function chuvaDeDinheiro() {
     ctx.scale(n.s, n.s);
     ctx.globalAlpha = n.opacity;
 
-    // nota de 100
-    const w = 60, h = 28;
-    ctx.fillStyle = "#2E8B57";
-    ctx.beginPath();
-    ctx.roundRect(-w / 2, -h / 2, w, h, 3);
-    ctx.fill();
-    ctx.fillStyle = "#90EE90";
-    ctx.beginPath();
-    ctx.roundRect(-w / 2 + 2, -h / 2 + 2, w - 4, h - 4, 2);
-    ctx.fill();
-    ctx.fillStyle = "#006400";
-    ctx.font = "bold 14px sans-serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText("R$", -10, -1);
-    ctx.font = "bold 16px sans-serif";
-    ctx.fillText("100", 12, 0);
+    ctx.scale(1, Math.cos(n.flip));
+    const w = 110, h = 49;
+    if (img.complete) ctx.drawImage(img, -w / 2, -h / 2, w, h);
 
     ctx.restore();
   }
@@ -244,8 +234,9 @@ function chuvaDeDinheiro() {
       n.x += n.vx;
       n.y += n.vy;
       n.rot += n.vr;
+      n.flip += n.vf;
       n.vx += (Math.random() - 0.5) * 0.3;
-      n.opacity = (0.7 + Math.random() * 0.3) * fade;
+      n.opacity = fade;
       if (n.y > canvas.height + 50) { n.y = -40; n.x = Math.random() * canvas.width; }
       drawNota(n);
     }
@@ -321,7 +312,7 @@ function Celebracao({ dados, onVoltar }: { dados: DadosGanhador; onVoltar: () =>
     return () => { if (pollingRef.current) clearInterval(pollingRef.current); };
   }, [dadosAtuais.premio?.estado, dadosAtuais.premio?.pix_chave, dadosAtuais.cpf]);
 
-  const valorPremio = dadosAtuais.premio?.valor ?? 0;
+  const valorPremio = dadosAtuais.premio?.valor || 20000;
 
   const dispararEfeitos = useCallback(() => {
     if (confettiDisparado.current) return;
@@ -342,7 +333,7 @@ function Celebracao({ dados, onVoltar }: { dados: DadosGanhador; onVoltar: () =>
   }, [dispararEfeitos]);
 
   useEffect(() => {
-    if (etapa < 5 || !valorPremio) return;
+    if (etapa < 2) return;
     let frame: number;
     const inicio = performance.now();
     const duracao = 2000;
@@ -389,12 +380,9 @@ function Celebracao({ dados, onVoltar }: { dados: DadosGanhador; onVoltar: () =>
 
       {etapa >= 1 && (
         <div className="relative z-10 text-center" style={{ animation: "celebracao-entrada 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both" }}>
-          <div className="mb-1 text-5xl" style={{ animation: "emoji-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both" }}>
-            💰
-          </div>
           <div className="flex items-center justify-center gap-2">
             <span className="celebracao-estrela text-base" style={{ animationDelay: "0.3s" }}>✦</span>
-            <h1 className="parabens-glow bg-gradient-to-r from-[#FFE066] via-[#FFD700] to-[#FFA500] bg-clip-text text-5xl font-black uppercase italic tracking-tight text-transparent sm:text-6xl">
+            <h1 className="parabens-glow bg-gradient-to-r from-[#FFE066] via-[#FFD700] to-[#FFA500] bg-clip-text text-5xl font-black uppercase italic tracking-tight text-transparent pr-3 sm:text-6xl">
               Parabéns!
             </h1>
             <span className="celebracao-estrela text-base" style={{ animationDelay: "0.5s" }}>✦</span>
@@ -402,6 +390,19 @@ function Celebracao({ dados, onVoltar }: { dados: DadosGanhador; onVoltar: () =>
           <p className="mt-2 text-base font-bold text-[#FFE066]/90">
             Você foi contemplado no Familhão!
           </p>
+        </div>
+      )}
+
+      {etapa >= 2 && (
+        <div className="relative z-10 w-full" style={{ animation: "celebracao-card 0.6s cubic-bezier(0.22, 1, 0.36, 1) both" }}>
+          <div className="rounded-3xl border-2 border-[#FFD700]/50 bg-gradient-to-br from-[#1A0037]/90 to-[#2D0A57]/70 px-4 py-6 text-center shadow-[0_0_50px_-8px_rgb(255_215_0/0.35)] backdrop-blur-sm">
+            <p className="mb-1 text-sm font-black uppercase tracking-[0.14em] text-[#FFD700]">
+              Seu prêmio
+            </p>
+            <p className="parabens-glow bg-gradient-to-r from-[#FFE066] via-[#FFD700] to-[#FFA500] bg-clip-text text-5xl font-black tabular-nums tracking-tight text-transparent sm:text-6xl">
+              {formatarValor(contadorValor)}
+            </p>
+          </div>
         </div>
       )}
 
@@ -432,18 +433,6 @@ function Celebracao({ dados, onVoltar }: { dados: DadosGanhador; onVoltar: () =>
         </div>
       )}
 
-      {etapa >= 4 && valorPremio > 0 && (
-        <div className="relative z-10 w-full" style={{ animation: "celebracao-card 0.6s cubic-bezier(0.22, 1, 0.36, 1) both" }}>
-          <div className="rounded-3xl border border-[#FFD700]/30 bg-gradient-to-br from-[#1A0037]/90 to-[#2D0A57]/70 p-6 text-center shadow-[0_0_40px_-10px_rgb(255_215_0/0.2)] backdrop-blur-sm">
-            <p className="mb-2 text-xs font-black uppercase tracking-[0.14em] text-[#FFD700]">
-              Valor do prêmio
-            </p>
-            <p className="bg-gradient-to-r from-[#FFE066] via-[#FFD700] to-[#FFA500] bg-clip-text font-mono text-5xl font-black tracking-tight text-transparent">
-              {formatarValor(etapa >= 5 ? contadorValor : 0)}
-            </p>
-          </div>
-        </div>
-      )}
 
       {etapa >= 5 && (
         <div className="relative z-10 w-full" style={{ animation: "celebracao-card 0.6s cubic-bezier(0.22, 1, 0.36, 1) both" }}>

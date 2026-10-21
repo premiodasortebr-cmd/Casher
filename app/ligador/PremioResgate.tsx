@@ -41,7 +41,7 @@ export function PremioResgateCard({
 }) {
   const [codigo, setCodigo] = useState(premio?.codigo ?? "");
   const [valorStr, setValorStr] = useState(
-    premio?.valor ? maskCentavos(String(Math.round(premio.valor * 100))) : "",
+    maskCentavos(String(Math.round((premio?.valor || 20000) * 100))),
   );
   const [pendente, start] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
