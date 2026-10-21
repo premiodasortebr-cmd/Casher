@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Logo } from "@/components/ui/Logo";
+import Image from "next/image";
 import { consultarCpf, enviarPixChave, type DadosGanhador } from "./actions";
 import confetti from "canvas-confetti";
 
@@ -13,6 +13,19 @@ function maskCpf(v: string) {
   if (d.length <= 6) return `${d.slice(0, 3)}.${d.slice(3)}`;
   if (d.length <= 9) return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}`;
   return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
+}
+
+function FamilhaoLogo() {
+  return (
+    <Image
+      src="/familhao/logo.webp"
+      alt="Familhão"
+      width={170}
+      height={39}
+      priority
+      className="h-8 w-auto sm:h-10"
+    />
+  );
 }
 
 export default function GanhadorPage() {
@@ -61,9 +74,9 @@ export default function GanhadorPage() {
   }
 
   return (
-    <div className="flex min-h-[100dvh] flex-col bg-canvas">
+    <div className="theme-familhao flex min-h-[100dvh] flex-col">
       <header className="flex justify-center px-4 pt-6 pb-2">
-        <Logo compact />
+        <FamilhaoLogo />
       </header>
 
       <main className="flex flex-1 flex-col items-center justify-center px-4 pb-12">
@@ -91,8 +104,8 @@ function FormCpf({
   return (
     <form onSubmit={onSubmit} className="flex w-full max-w-sm animate-fade-up flex-col items-center gap-6">
       <div className="text-center">
-        <h1 className="text-2xl font-bold tracking-tight text-fg">Consultar Prêmio</h1>
-        <p className="mt-2 text-sm text-fg-muted">Digite seu CPF para verificar se você foi contemplado.</p>
+        <h1 className="text-2xl font-black tracking-tight text-white">Consultar Prêmio</h1>
+        <p className="mt-2 text-sm text-white/70">Digite seu CPF para verificar se você foi contemplado.</p>
       </div>
       <div className="w-full">
         <input
@@ -101,16 +114,16 @@ function FormCpf({
           placeholder="000.000.000-00"
           value={cpf}
           onChange={(e) => setCpf(maskCpf(e.target.value))}
-          className="h-14 w-full rounded-2xl border border-line-strong bg-surface-2 px-5 text-center text-lg tracking-wider text-fg shadow-[inset_0_1px_2px_0_rgb(0_0_0/0.35)] placeholder:text-fg-subtle outline-none transition-all duration-300 focus:border-accent/60 focus:shadow-[0_0_0_4px_rgb(34_197_94/0.15)]"
+          className="h-14 w-full rounded-2xl border border-white/20 bg-white/10 px-5 text-center text-lg tracking-wider text-white shadow-[inset_0_2px_4px_0_rgb(0_0_0/0.2)] placeholder:text-white/40 outline-none backdrop-blur-sm transition-all duration-300 focus:border-[#D04AFF]/60 focus:bg-white/15 focus:shadow-[0_0_0_4px_rgb(208_74_255/0.2)]"
           autoFocus
         />
-        {erro && <p className="mt-2 text-center text-sm text-danger">{erro}</p>}
+        {erro && <p className="mt-2 text-center text-sm text-[#FF97E2]">{erro}</p>}
       </div>
       <button
         type="submit"
-        className="h-12 w-full rounded-full bg-accent text-base font-semibold text-accent-fg shadow-[inset_0_1px_0_0_rgb(255_255_255/0.35)] transition-all duration-300 hover:bg-accent-strong hover:shadow-accent active:scale-[0.97]"
+        className="h-12 w-full rounded-full bg-gradient-to-r from-[#FF97E2] to-[#FF2FC4] text-base font-black text-white shadow-[0_4px_20px_-4px_rgb(255_47_196/0.5)] transition-all duration-300 hover:shadow-[0_6px_28px_-4px_rgb(255_47_196/0.7)] active:scale-[0.97]"
       >
-        Consultar
+        CONSULTAR
       </button>
     </form>
   );
@@ -120,12 +133,12 @@ function BarraProgresso({ progresso }: { progresso: number }) {
   return (
     <div className="flex w-full max-w-sm animate-fade-in flex-col items-center gap-6">
       <div className="flex flex-col items-center gap-3">
-        <div className="size-10 animate-spin rounded-full border-2 border-accent/30 border-t-accent" />
-        <p className="text-sm text-fg-muted">Verificando seu CPF...</p>
+        <div className="size-10 animate-spin rounded-full border-2 border-[#D04AFF]/30 border-t-[#D04AFF]" />
+        <p className="text-sm text-white/70">Verificando seu CPF...</p>
       </div>
-      <div className="h-2 w-full overflow-hidden rounded-full bg-surface-3">
+      <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
         <div
-          className="h-full rounded-full bg-accent transition-all duration-500 ease-out"
+          className="h-full rounded-full bg-gradient-to-r from-[#8128E8] to-[#D04AFF] transition-all duration-500 ease-out"
           style={{ width: `${progresso}%` }}
         />
       </div>
@@ -136,17 +149,17 @@ function BarraProgresso({ progresso }: { progresso: number }) {
 function TelaErro({ erro, onVoltar }: { erro: string; onVoltar: () => void }) {
   return (
     <div className="flex w-full max-w-sm animate-fade-up flex-col items-center gap-6 text-center">
-      <div className="flex size-16 items-center justify-center rounded-full bg-danger-soft text-3xl">
+      <div className="flex size-16 items-center justify-center rounded-full bg-[#FF52CF]/15 text-3xl">
         😔
       </div>
       <div>
-        <h2 className="text-xl font-bold text-fg">Não encontrado</h2>
-        <p className="mt-2 text-sm text-fg-muted">{erro}</p>
+        <h2 className="text-xl font-black text-white">Não encontrado</h2>
+        <p className="mt-2 text-sm text-white/70">{erro}</p>
       </div>
       <button
         type="button"
         onClick={onVoltar}
-        className="h-11 w-full rounded-full border border-line-strong bg-surface-2 text-sm font-medium text-fg shadow-bezel transition-all duration-300 hover:bg-surface-3 active:scale-[0.97]"
+        className="h-11 w-full rounded-full border border-white/20 bg-white/10 text-sm font-bold text-white backdrop-blur-sm transition-all duration-300 hover:bg-white/15 active:scale-[0.97]"
       >
         Tentar outro CPF
       </button>
@@ -185,22 +198,10 @@ function Celebracao({ dados, onVoltar }: { dados: DadosGanhador; onVoltar: () =>
     if (confettiDisparado.current) return;
     confettiDisparado.current = true;
     const end = Date.now() + 4000;
-    const cores = ["#22c55e", "#4ade80", "#eec26a", "#ffffff"];
+    const cores = ["#8128E8", "#D04AFF", "#FF52CF", "#E498FF", "#FFD700", "#ffffff"];
     (function frame() {
-      confetti({
-        particleCount: 3,
-        angle: 60,
-        spread: 55,
-        origin: { x: 0, y: 0.7 },
-        colors: cores,
-      });
-      confetti({
-        particleCount: 3,
-        angle: 120,
-        spread: 55,
-        origin: { x: 1, y: 0.7 },
-        colors: cores,
-      });
+      confetti({ particleCount: 3, angle: 60, spread: 55, origin: { x: 0, y: 0.7 }, colors: cores });
+      confetti({ particleCount: 3, angle: 120, spread: 55, origin: { x: 1, y: 0.7 }, colors: cores });
       if (Date.now() < end) requestAnimationFrame(frame);
     })();
   }, []);
@@ -257,21 +258,19 @@ function Celebracao({ dados, onVoltar }: { dados: DadosGanhador; onVoltar: () =>
 
   return (
     <div className="flex w-full max-w-md flex-col items-center gap-4 pb-8">
-      {/* Trophy */}
       {etapa >= 1 && (
         <div className="animate-fade-up text-center">
           <div className="mb-2 text-6xl" style={{ animation: "bounce-trophy 0.6s ease-out" }}>
             🏆
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-accent">Parabéns!</h1>
-          <p className="mt-1 text-sm text-fg-muted">Você foi contemplado!</p>
+          <h1 className="text-3xl font-black tracking-tight text-white">Parabéns!</h1>
+          <p className="mt-1 text-sm text-white/70">Você foi contemplado!</p>
         </div>
       )}
 
-      {/* Dados do ganhador */}
       {etapa >= 2 && (
-        <div className="w-full animate-fade-up rounded-2xl border border-accent-line bg-accent-soft/50 p-5">
-          <p className="mb-3 text-xs font-medium uppercase tracking-[0.14em] text-accent">
+        <div className="w-full animate-fade-up rounded-3xl border border-[#D04AFF]/40 bg-[#8128E8]/30 p-5 backdrop-blur-sm">
+          <p className="mb-3 text-xs font-black uppercase tracking-[0.14em] text-[#E498FF]">
             Dados confirmados do ganhador
           </p>
           <div className="space-y-2 text-sm">
@@ -283,88 +282,83 @@ function Celebracao({ dados, onVoltar }: { dados: DadosGanhador; onVoltar: () =>
         </div>
       )}
 
-      {/* Bilhete premiado — código */}
       {etapa >= 3 && temCodigo && (
-        <div className="w-full animate-fade-up rounded-2xl border border-line bg-surface p-5 text-center">
-          <p className="mb-3 text-xs font-medium uppercase tracking-[0.14em] text-fg-subtle">
+        <div className="w-full animate-fade-up rounded-3xl border border-white/15 bg-[#1A0037]/80 p-5 text-center backdrop-blur-sm">
+          <p className="mb-3 text-xs font-black uppercase tracking-[0.14em] text-[#DFC0FF]">
             Bilhete Premiado
           </p>
-          <p className="font-mono text-2xl font-bold tracking-[0.2em] text-fg">
+          <p className="font-mono text-2xl font-bold tracking-[0.2em] text-white">
             {temCodigo}
           </p>
         </div>
       )}
 
-      {/* Valor do prêmio */}
       {etapa >= 4 && valorPremio > 0 && (
-        <div className="w-full animate-fade-up rounded-2xl border border-accent-line bg-surface p-5 text-center">
-          <p className="mb-1 text-xs font-medium uppercase tracking-[0.14em] text-fg-subtle">
+        <div className="w-full animate-fade-up rounded-3xl border border-[#D04AFF]/40 bg-[#1A0037]/80 p-5 text-center backdrop-blur-sm">
+          <p className="mb-1 text-xs font-black uppercase tracking-[0.14em] text-[#DFC0FF]">
             Valor do prêmio
           </p>
-          <p className="font-mono text-4xl font-bold tracking-tight text-accent">
+          <p className="font-mono text-4xl font-bold tracking-tight text-[#E498FF]">
             {formatarValor(etapa >= 5 ? contadorValor : 0)}
           </p>
         </div>
       )}
 
-      {/* Resgate do prêmio */}
       {etapa >= 5 && (
         <div className="w-full animate-fade-up">
           {liberado && temCodigo ? (
-            <div className="rounded-2xl border border-accent-line bg-surface p-5 text-center">
-              <p className="mb-3 text-xs font-medium uppercase tracking-[0.14em] text-accent">
+            <div className="rounded-3xl border border-[#D04AFF]/40 bg-[#8128E8]/30 p-5 text-center backdrop-blur-sm">
+              <p className="mb-3 text-xs font-black uppercase tracking-[0.14em] text-[#E498FF]">
                 Prêmio liberado!
               </p>
-              <p className="mb-4 text-sm text-fg-muted">
+              <p className="mb-4 text-sm text-white/70">
                 Copie o código abaixo para resgatar seu prêmio.
               </p>
-              <div className="rounded-xl bg-surface-2 p-4">
-                <p className="font-mono text-lg font-bold tracking-[0.15em] text-fg">{temCodigo}</p>
+              <div className="rounded-2xl bg-[#1A0037]/80 p-4">
+                <p className="font-mono text-lg font-bold tracking-[0.15em] text-white">{temCodigo}</p>
               </div>
               <button
                 type="button"
                 onClick={copiarCodigo}
-                className="mt-4 h-11 w-full rounded-full bg-accent text-sm font-semibold text-accent-fg shadow-[inset_0_1px_0_0_rgb(255_255_255/0.35)] transition-all duration-300 hover:bg-accent-strong active:scale-[0.97]"
+                className="mt-4 h-11 w-full rounded-full bg-gradient-to-r from-[#FF97E2] to-[#FF2FC4] text-sm font-black text-white shadow-[0_4px_20px_-4px_rgb(255_47_196/0.5)] transition-all duration-300 hover:shadow-[0_6px_28px_-4px_rgb(255_47_196/0.7)] active:scale-[0.97]"
               >
-                {copiado ? "Copiado!" : "Copiar código"}
+                {copiado ? "COPIADO!" : "COPIAR CÓDIGO"}
               </button>
             </div>
           ) : temPix ? (
-            <div className="rounded-2xl border border-warning-line bg-warning-soft/50 p-5 text-center">
-              <p className="mb-2 text-lg font-bold text-warning">Aguardando liberação</p>
-              <p className="text-sm text-fg-muted">
+            <div className="rounded-3xl border border-[#FFD700]/30 bg-[#FFD700]/10 p-5 text-center backdrop-blur-sm">
+              <p className="mb-2 text-lg font-black text-[#FFD700]">Aguardando liberação</p>
+              <p className="text-sm text-white/70">
                 Sua chave Pix foi registrada. O código do prêmio será liberado em breve.
               </p>
             </div>
           ) : (
-            <div className="rounded-2xl border border-line bg-surface p-5 text-center">
-              <p className="mb-3 text-sm text-fg-muted">
+            <div className="rounded-3xl border border-white/15 bg-[#1A0037]/80 p-5 text-center backdrop-blur-sm">
+              <p className="mb-3 text-sm text-white/70">
                 Para resgatar seu prêmio, informe sua chave Pix.
               </p>
               <button
                 type="button"
                 onClick={() => setPixModal(true)}
-                className="h-11 w-full rounded-full bg-accent text-sm font-semibold text-accent-fg shadow-[inset_0_1px_0_0_rgb(255_255_255/0.35)] transition-all duration-300 hover:bg-accent-strong active:scale-[0.97]"
+                className="h-11 w-full rounded-full bg-gradient-to-r from-[#FF97E2] to-[#FF2FC4] text-sm font-black text-white shadow-[0_4px_20px_-4px_rgb(255_47_196/0.5)] transition-all duration-300 hover:shadow-[0_6px_28px_-4px_rgb(255_47_196/0.7)] active:scale-[0.97]"
               >
-                Resgatar meu prêmio
+                RESGATAR MEU PRÊMIO
               </button>
             </div>
           )}
         </div>
       )}
 
-      {/* Voltar */}
       {etapa >= 5 && (
         <button
           type="button"
           onClick={onVoltar}
-          className="mt-2 text-sm text-fg-subtle transition-colors hover:text-fg"
+          className="mt-2 text-sm text-white/50 transition-colors hover:text-white/80"
         >
           Consultar outro CPF
         </button>
       )}
 
-      {/* Modal Pix */}
       {pixModal && (
         <ModalPix
           cpf={dadosAtuais.cpf}
@@ -400,8 +394,8 @@ function Celebracao({ dados, onVoltar }: { dados: DadosGanhador; onVoltar: () =>
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between gap-3">
-      <span className="text-fg-subtle">{label}</span>
-      <span className="text-right font-medium text-fg">{value}</span>
+      <span className="text-[#DFC0FF]">{label}</span>
+      <span className="text-right font-bold text-white">{value}</span>
     </div>
   );
 }
@@ -446,16 +440,16 @@ function ModalPix({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
-      <div className="w-full max-w-sm animate-fade-up rounded-2xl border border-line bg-surface p-6 shadow-float">
-        <h3 className="mb-4 text-lg font-bold text-fg">Chave Pix</h3>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1A0037]/80 px-4 backdrop-blur-sm">
+      <div className="w-full max-w-sm animate-fade-up rounded-3xl border border-white/15 bg-[#2D0A57] p-6 shadow-[0_24px_48px_-24px_rgb(0_0_0/0.6)]">
+        <h3 className="mb-4 text-lg font-black text-white">Chave Pix</h3>
         <form onSubmit={salvar} className="flex flex-col gap-4">
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-fg-muted">Tipo da chave</label>
+            <label className="mb-1.5 block text-xs font-bold text-[#DFC0FF]">Tipo da chave</label>
             <select
               value={tipo}
               onChange={(e) => { const t = e.target.value; setTipo(t); setChave(t === "cpf" ? maskCpf(cpf) : ""); }}
-              className="h-11 w-full appearance-none rounded-xl border border-line-strong bg-surface-2 px-3.5 text-sm text-fg outline-none transition-all duration-300 focus:border-accent/60 [&_option]:bg-[#111] [&_option]:text-[#f0f2f5]"
+              className="h-11 w-full appearance-none rounded-2xl border border-white/15 bg-white/10 px-3.5 text-sm text-white outline-none transition-all duration-300 focus:border-[#D04AFF]/60 [&_option]:bg-[#2D0A57] [&_option]:text-white"
             >
               <option value="cpf">CPF</option>
               <option value="telefone">Telefone</option>
@@ -464,7 +458,7 @@ function ModalPix({
             </select>
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-fg-muted">Chave</label>
+            <label className="mb-1.5 block text-xs font-bold text-[#DFC0FF]">Chave</label>
             <input
               type="text"
               value={chave}
@@ -475,25 +469,25 @@ function ModalPix({
                 : tipo === "email" ? "email@exemplo.com"
                 : "Cole sua chave aqui"
               }
-              className="h-11 w-full rounded-xl border border-line-strong bg-surface-2 px-3.5 text-sm text-fg placeholder:text-fg-subtle outline-none transition-all duration-300 focus:border-accent/60"
+              className="h-11 w-full rounded-2xl border border-white/15 bg-white/10 px-3.5 text-sm text-white placeholder:text-white/40 outline-none transition-all duration-300 focus:border-[#D04AFF]/60"
               autoFocus
             />
           </div>
-          {erro && <p className="text-sm text-danger">{erro}</p>}
+          {erro && <p className="text-sm text-[#FF97E2]">{erro}</p>}
           <div className="flex gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 h-11 rounded-full border border-line-strong bg-surface-2 text-sm font-medium text-fg transition-all duration-300 hover:bg-surface-3 active:scale-[0.97]"
+              className="h-11 flex-1 rounded-full border border-white/20 bg-white/10 text-sm font-bold text-white transition-all duration-300 hover:bg-white/15 active:scale-[0.97]"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={salvando}
-              className="flex-1 h-11 rounded-full bg-accent text-sm font-semibold text-accent-fg transition-all duration-300 hover:bg-accent-strong active:scale-[0.97] disabled:opacity-50"
+              className="h-11 flex-1 rounded-full bg-gradient-to-r from-[#FF97E2] to-[#FF2FC4] text-sm font-black text-white transition-all duration-300 hover:shadow-[0_4px_20px_-4px_rgb(255_47_196/0.5)] active:scale-[0.97] disabled:opacity-50"
             >
-              {salvando ? "Salvando..." : "Enviar"}
+              {salvando ? "Salvando..." : "ENVIAR"}
             </button>
           </div>
         </form>

@@ -80,6 +80,30 @@
   }
 }
 
+/* Familhão theme — applied via .theme-familhao on ganhador/ligador routes */
+.theme-familhao {
+  --fml-purple: #5300AA;
+  --fml-purple-light: #8128E8;
+  --fml-purple-dark: #1A0037;
+  --fml-purple-surface: #2D0A57;
+  --fml-purple-card: #3A0E6E;
+  --fml-lilac: #DFC0FF;
+  --fml-lilac-bg: #F8F0FE;
+  --fml-pink: #FF52CF;
+  --fml-pink-soft: rgb(255 82 207 / 0.15);
+  --fml-gradient: linear-gradient(135deg, #8128E8 0%, #D04AFF 50%, #E498FF 100%);
+  --fml-gradient-cta: linear-gradient(135deg, #FF97E2 -52%, #FF2FC4 50%);
+  --fml-fg: #ffffff;
+  --fml-fg-muted: rgba(255 255 255 / 0.7);
+  --fml-fg-subtle: rgba(255 255 255 / 0.5);
+  --fml-line: rgba(255 255 255 / 0.15);
+  --fml-radius-card: 24px;
+  --fml-radius-btn: 32px;
+
+  background: var(--fml-purple);
+  color: var(--fml-fg);
+}
+
 @layer base {
   html {
     color-scheme: dark;

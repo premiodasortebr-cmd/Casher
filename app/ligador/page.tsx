@@ -1,11 +1,9 @@
 import Link from "next/link";
+import Image from "next/image";
 import { redirect } from "next/navigation";
 import { SignOutIcon, TicketIcon } from "@phosphor-icons/react/dist/ssr";
-import { Logo } from "@/components/ui/Logo";
 import { Avatar } from "@/components/ui/Avatar";
-import { EmptyState } from "@/components/ui/Layout";
 import { Card } from "@/components/ui/Card";
-import { StatusBar, StatusLegenda } from "@/components/ui/Stats";
 import { Pagination } from "@/components/ui/Pagination";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { requireLigadorSession } from "@/lib/auth/guard";
@@ -36,16 +34,12 @@ export default async function LigadorHomePage({ searchParams }: { searchParams: 
     .from("fichas_lista")
     .select("*", { count: "exact" })
     .eq("ligador_id", sessao.ligadorId);
-  // "Fila" é escrita como NÃO-resolvida: assim funciona mesmo antes da migration
-  // 0008 (o banco só conhece 'retornar' depois dela).
   if (aba === "fila") consulta = consulta.not("status", "in", `(${STATUS_RESOLVIDOS.join(",")})`);
   else if (aba === "retornar") consulta = consulta.eq("status", "retornar");
   else consulta = consulta.in("status", STATUS_RESOLVIDOS);
   const busca = normalizarBusca(q);
   if (busca) consulta = consulta.ilike("busca", `%${busca}%`);
 
-  // Na fila, quem pediu pra retornar vem antes de quem ainda não foi ligado; no
-  // histórico, o que foi marcado por último vem primeiro.
   if (aba === "fila") consulta = consulta.order("status", { ascending: false });
   if (aba === "historico") consulta = consulta.order("status_atualizado_em", { ascending: false, nullsFirst: false });
 
@@ -60,10 +54,8 @@ export default async function LigadorHomePage({ searchParams }: { searchParams: 
       .eq("status", "retornar"),
   ]);
 
-  // Banco ainda sem o status 'retornar' (migration 0008 não colada): aba vazia, sem quebrar.
   const semRetornar = /enum ficha_status/.test(erroLista?.message ?? "");
   const error = semRetornar && aba === "retornar" ? null : erroLista;
-  // offset > total: PostgREST responde 416 (ex.: marcou todas as fichas da página 2).
   if (error?.code === "PGRST103") redirect(montarQuery(BASE, filtros));
   if (error) throw new Error(`Falha ao carregar fichas: ${error.message}`);
 
@@ -83,23 +75,23 @@ export default async function LigadorHomePage({ searchParams }: { searchParams: 
   ];
 
   return (
-    <div className="min-h-[100dvh]">
-      <header className="sticky top-0 z-30 border-b border-line bg-canvas/85 px-4 py-3.5 backdrop-blur-xl sm:px-6">
+    <div className="theme-familhao min-h-[100dvh]">
+      <header className="sticky top-0 z-30 border-b border-white/15 bg-[#5300AA]/90 px-4 py-3.5 backdrop-blur-xl sm:px-6">
         <div className="mx-auto flex max-w-2xl items-center justify-between">
           <Link href={BASE} aria-label="Início">
-            <Logo compact />
+            <Image src="/familhao/logo.webp" alt="Familhão" width={130} height={30} priority className="h-7 w-auto sm:h-8" />
           </Link>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2.5">
               <Avatar nome={sessao.nome} size="sm" />
-              <span className="hidden text-[13.5px] font-medium text-fg sm:inline">{sessao.nome}</span>
+              <span className="hidden text-[13.5px] font-medium text-white/90 sm:inline">{sessao.nome}</span>
             </div>
             <form action={sairLigador}>
               <button
                 type="submit"
                 aria-label="Sair"
                 title="Sair"
-                className="flex size-8 items-center justify-center rounded-full text-fg-subtle transition-colors duration-300 ease-spring hover:bg-white/[0.06] hover:text-fg"
+                className="flex size-8 items-center justify-center rounded-full text-white/50 transition-colors duration-300 hover:bg-white/10 hover:text-white"
               >
                 <SignOutIcon size={17} />
               </button>
@@ -111,24 +103,40 @@ export default async function LigadorHomePage({ searchParams }: { searchParams: 
       <main className="mx-auto flex max-w-2xl flex-col gap-5 px-4 py-6 sm:px-6">
         <TransmissaoGate ligadorId={sessao.ligadorId}>
 
-        <Card className="animate-fade-up [animation-delay:40ms] px-5 py-4">
+        <div className="animate-fade-up rounded-3xl border border-[#D04AFF]/30 bg-[#2D0A57]/80 px-5 py-4 backdrop-blur-sm [animation-delay:40ms]">
           <div className="flex items-end justify-between gap-3">
             <div>
-              <p className="text-[12px] font-medium uppercase tracking-[0.14em] text-fg-subtle">Sua fila</p>
-              <p className="mt-1 font-mono text-[34px] font-medium leading-none tracking-[-0.04em] tabular-nums text-fg">
+              <p className="text-[12px] font-black uppercase tracking-[0.14em] text-[#DFC0FF]">Sua fila</p>
+              <p className="mt-1 font-mono text-[34px] font-medium leading-none tracking-[-0.04em] tabular-nums text-white">
                 {formatNumero(contagem.pendente)}
-                <span className="ml-2 text-[14px] font-normal tracking-normal text-fg-muted">pendentes</span>
+                <span className="ml-2 text-[14px] font-normal tracking-normal text-white/60">pendentes</span>
               </p>
             </div>
-            <p className="text-right text-[12.5px] text-fg-subtle">
+            <p className="text-right text-[12.5px] text-white/50">
               {formatNumero(contagem.deu_bom)} deu bom
               <br />
               {formatNumero(contagem.deu_ruim)} deu ruim
             </p>
           </div>
-          <StatusBar contagem={contagem} className="mt-4" />
-          <StatusLegenda contagem={contagem} />
-        </Card>
+          <div className="mt-4 flex gap-1 overflow-hidden rounded-full">
+            {(() => {
+              const t = contagem.pendente + contagem.deu_bom + contagem.deu_ruim;
+              if (t === 0) return <div className="h-2 flex-1 rounded-full bg-white/10" />;
+              return (
+                <>
+                  {contagem.pendente > 0 && <div className="h-2 rounded-full bg-[#D04AFF]" style={{ flex: contagem.pendente }} />}
+                  {contagem.deu_bom > 0 && <div className="h-2 rounded-full bg-[#4ade80]" style={{ flex: contagem.deu_bom }} />}
+                  {contagem.deu_ruim > 0 && <div className="h-2 rounded-full bg-[#f1787d]" style={{ flex: contagem.deu_ruim }} />}
+                </>
+              );
+            })()}
+          </div>
+          <div className="mt-2 flex gap-4 text-[11px] text-white/50">
+            <span className="flex items-center gap-1.5"><span className="inline-block size-2 rounded-full bg-[#D04AFF]" />Pendente</span>
+            <span className="flex items-center gap-1.5"><span className="inline-block size-2 rounded-full bg-[#4ade80]" />Deu bom</span>
+            <span className="flex items-center gap-1.5"><span className="inline-block size-2 rounded-full bg-[#f1787d]" />Deu ruim</span>
+          </div>
+        </div>
 
         <div className="flex flex-col gap-3">
           <nav className="-mx-4 flex gap-1.5 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0">
@@ -139,12 +147,14 @@ export default async function LigadorHomePage({ searchParams }: { searchParams: 
                   key={a.chave}
                   href={montarQuery(BASE, { q, aba: a.chave === "fila" ? "" : a.chave })}
                   scroll={false}
-                  className={`flex h-9 shrink-0 items-center gap-2 rounded-full border px-3.5 text-[13px] transition-colors duration-300 ease-spring ${
-                    on ? "border-accent-line bg-accent-soft text-accent" : "border-line bg-white/[0.02] text-fg-muted hover:text-fg"
+                  className={`flex h-9 shrink-0 items-center gap-2 rounded-full border px-3.5 text-[13px] transition-colors duration-300 ${
+                    on
+                      ? "border-[#D04AFF]/50 bg-[#D04AFF]/20 text-[#E498FF]"
+                      : "border-white/10 bg-white/5 text-white/60 hover:text-white"
                   }`}
                 >
                   {a.label}
-                  <span className={`font-mono text-[11.5px] tabular-nums ${on ? "text-accent" : "text-fg-subtle"}`}>{a.n}</span>
+                  <span className={`font-mono text-[11.5px] tabular-nums ${on ? "text-[#E498FF]" : "text-white/40"}`}>{a.n}</span>
                 </Link>
               );
             })}
@@ -153,29 +163,23 @@ export default async function LigadorHomePage({ searchParams }: { searchParams: 
         </div>
 
         {(fichas ?? []).length === 0 ? (
-          <Card>
-            <EmptyState
-              icon={<TicketIcon />}
-              title={
-                q
-                  ? "Nada encontrado"
-                  : aba === "fila"
-                    ? "Fila zerada"
-                    : aba === "retornar"
-                      ? "Ninguém pra retornar"
-                      : "Histórico vazio"
-              }
-              description={
-                q
-                  ? "Tenta outro nome ou número."
-                  : aba === "fila"
-                    ? "Quando o admin liberar mais fichas, elas aparecem aqui."
-                    : aba === "retornar"
-                      ? "As fichas que você marcar como 'Retornar' ficam aqui e no topo da fila."
-                      : "Tudo que você marcar como deu bom ou deu ruim sai da fila e fica aqui."
-              }
-            />
-          </Card>
+          <div className="rounded-3xl border border-white/10 bg-[#2D0A57]/60 p-8 text-center backdrop-blur-sm">
+            <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-[#D04AFF]/15 text-[#DFC0FF]">
+              <TicketIcon size={24} />
+            </div>
+            <p className="text-lg font-bold text-white">
+              {q ? "Nada encontrado" : aba === "fila" ? "Fila zerada" : aba === "retornar" ? "Ninguém pra retornar" : "Histórico vazio"}
+            </p>
+            <p className="mt-1 text-sm text-white/50">
+              {q
+                ? "Tenta outro nome ou número."
+                : aba === "fila"
+                  ? "Quando o admin liberar mais fichas, elas aparecem aqui."
+                  : aba === "retornar"
+                    ? "As fichas que você marcar como 'Retornar' ficam aqui e no topo da fila."
+                    : "Tudo que você marcar como deu bom ou deu ruim sai da fila e fica aqui."}
+            </p>
+          </div>
         ) : (
           <div className="flex flex-col gap-3">
             {(fichas ?? []).map((f) => (
