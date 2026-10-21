@@ -80,22 +80,23 @@ export default function GanhadorPage() {
       </header>
 
       <main className="flex flex-1 flex-col items-center px-4 pb-12">
-        {/* Personagens — 3 lado a lado acima do formulário */}
-        <div className="mt-2 flex justify-center sm:mt-4">
-          <div className="w-[240px] sm:w-[280px] md:w-[320px]">
-            <Image
-              src="/familhao/ivete.webp"
-              alt=""
-              width={320}
-              height={400}
-              className="h-auto w-full object-contain"
-              priority
-              style={{ maskImage: "radial-gradient(ellipse 75% 75% at 50% 45%, black 50%, transparent 100%)" }}
-            />
+        {estagio !== "resultado" && (
+          <div className="mt-2 flex justify-center sm:mt-4">
+            <div className="w-[240px] sm:w-[280px] md:w-[320px]">
+              <Image
+                src="/familhao/ivete.webp"
+                alt=""
+                width={320}
+                height={400}
+                className="h-auto w-full object-contain"
+                priority
+                style={{ maskImage: "radial-gradient(ellipse 75% 75% at 50% 45%, black 50%, transparent 100%)" }}
+              />
+            </div>
           </div>
-        </div>
+        )}
 
-        <div className="mt-6 w-full max-w-md sm:mt-8">
+        <div className={`w-full max-w-md ${estagio === "resultado" ? "mt-4" : "mt-6 sm:mt-8"}`}>
           {estagio === "form" && (
             <FormCpf cpf={cpf} setCpf={setCpf} erro={erro} onSubmit={consultar} />
           )}
@@ -184,6 +185,42 @@ function TelaErro({ erro, onVoltar }: { erro: string; onVoltar: () => void }) {
   );
 }
 
+function GoldBar() {
+  return (
+    <svg viewBox="0 0 120 80" className="w-20 sm:w-24" style={{ filter: "drop-shadow(0 0 20px rgb(255 215 0 / 0.6))" }}>
+      <defs>
+        <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#FFE066" />
+          <stop offset="30%" stopColor="#FFD700" />
+          <stop offset="60%" stopColor="#DAA520" />
+          <stop offset="100%" stopColor="#B8860B" />
+        </linearGradient>
+        <linearGradient id="goldTop" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#FFF3A0" />
+          <stop offset="50%" stopColor="#FFD700" />
+          <stop offset="100%" stopColor="#DAA520" />
+        </linearGradient>
+        <linearGradient id="shine" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="rgba(255,255,255,0.5)" />
+          <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+        </linearGradient>
+      </defs>
+      {/* top face */}
+      <polygon points="30,20 90,20 105,35 15,35" fill="url(#goldTop)" />
+      {/* front face */}
+      <polygon points="15,35 105,35 100,70 20,70" fill="url(#gold)" />
+      {/* left face */}
+      <polygon points="15,35 20,70 20,70 15,35" fill="#B8860B" />
+      {/* right face */}
+      <polygon points="105,35 100,70 100,70 105,35" fill="#996515" />
+      {/* shine */}
+      <polygon points="32,22 70,22 80,34 20,34" fill="url(#shine)" opacity="0.6" />
+      {/* M logo */}
+      <text x="60" y="57" textAnchor="middle" fontSize="18" fontWeight="900" fill="#5300AA" fontFamily="sans-serif" opacity="0.7">M</text>
+    </svg>
+  );
+}
+
 function Celebracao({ dados, onVoltar }: { dados: DadosGanhador; onVoltar: () => void }) {
   const [etapa, setEtapa] = useState(0);
   const confettiDisparado = useRef(false);
@@ -214,22 +251,22 @@ function Celebracao({ dados, onVoltar }: { dados: DadosGanhador; onVoltar: () =>
   const dispararConfetti = useCallback(() => {
     if (confettiDisparado.current) return;
     confettiDisparado.current = true;
-    const end = Date.now() + 4000;
-    const cores = ["#8128E8", "#D04AFF", "#FF52CF", "#E498FF", "#FFD700", "#ffffff"];
+    const end = Date.now() + 5000;
+    const cores = ["#FFD700", "#FFA500", "#D04AFF", "#FF52CF", "#E498FF", "#ffffff"];
     (function frame() {
-      confetti({ particleCount: 3, angle: 60, spread: 55, origin: { x: 0, y: 0.7 }, colors: cores });
-      confetti({ particleCount: 3, angle: 120, spread: 55, origin: { x: 1, y: 0.7 }, colors: cores });
+      confetti({ particleCount: 4, angle: 60, spread: 65, origin: { x: 0, y: 0.6 }, colors: cores, gravity: 0.8, scalar: 1.1 });
+      confetti({ particleCount: 4, angle: 120, spread: 65, origin: { x: 1, y: 0.6 }, colors: cores, gravity: 0.8, scalar: 1.1 });
       if (Date.now() < end) requestAnimationFrame(frame);
     })();
   }, []);
 
   useEffect(() => {
     const timers = [
-      setTimeout(() => { setEtapa(1); dispararConfetti(); }, 300),
-      setTimeout(() => setEtapa(2), 1200),
-      setTimeout(() => setEtapa(3), 2000),
-      setTimeout(() => setEtapa(4), 2800),
-      setTimeout(() => setEtapa(5), 3600),
+      setTimeout(() => { setEtapa(1); dispararConfetti(); }, 200),
+      setTimeout(() => setEtapa(2), 1400),
+      setTimeout(() => setEtapa(3), 2200),
+      setTimeout(() => setEtapa(4), 3000),
+      setTimeout(() => setEtapa(5), 3800),
     ];
     return () => timers.forEach(clearTimeout);
   }, [dispararConfetti]);
@@ -238,10 +275,10 @@ function Celebracao({ dados, onVoltar }: { dados: DadosGanhador; onVoltar: () =>
     if (etapa < 5 || !valorPremio) return;
     let frame: number;
     const inicio = performance.now();
-    const duracao = 1500;
+    const duracao = 2000;
     function animar(agora: number) {
       const t = Math.min((agora - inicio) / duracao, 1);
-      const ease = 1 - Math.pow(1 - t, 3);
+      const ease = 1 - Math.pow(1 - t, 4);
       setContadorValor(Math.round(ease * valorPremio * 100) / 100);
       if (t < 1) frame = requestAnimationFrame(animar);
     }
@@ -274,90 +311,113 @@ function Celebracao({ dados, onVoltar }: { dados: DadosGanhador; onVoltar: () =>
   const temPix = premio?.pix_chave;
 
   return (
-    <div className="flex w-full max-w-md flex-col items-center gap-4 pb-8">
+    <div className="flex w-full max-w-md flex-col items-center gap-5 pb-8">
+      {/* Glow background pulse */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="celebracao-glow absolute left-1/2 top-1/3 size-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#FFD700]/8 blur-[100px]" />
+      </div>
+
       {etapa >= 1 && (
-        <div className="animate-fade-up text-center">
-          <div className="mb-2 text-6xl" style={{ animation: "bounce-trophy 0.6s ease-out" }}>
-            🏆
+        <div className="relative z-10 text-center" style={{ animation: "celebracao-entrada 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both" }}>
+          <div className="mb-3 flex justify-center" style={{ animation: "lingote-spin 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both" }}>
+            <GoldBar />
           </div>
-          <h1 className="text-3xl font-black tracking-tight text-white">Parabéns!</h1>
-          <p className="mt-1 text-sm text-white/70">Você foi contemplado!</p>
+          <div className="flex items-center justify-center gap-2">
+            <span className="celebracao-estrela text-lg" style={{ animationDelay: "0.3s" }}>✦</span>
+            <h1
+              className="bg-gradient-to-r from-[#FFE066] via-[#FFD700] to-[#FFA500] bg-clip-text text-4xl font-black tracking-tight text-transparent sm:text-5xl"
+              style={{ textShadow: "0 0 40px rgb(255 215 0 / 0.4)", WebkitTextStroke: "0" }}
+            >
+              PARABÉNS!
+            </h1>
+            <span className="celebracao-estrela text-lg" style={{ animationDelay: "0.5s" }}>✦</span>
+          </div>
+          <p className="mt-2 text-base font-medium text-[#FFE066]/80">
+            Você foi contemplado no Familhão!
+          </p>
         </div>
       )}
 
       {etapa >= 2 && (
-        <div className="w-full animate-fade-up rounded-3xl border border-[#D04AFF]/40 bg-[#8128E8]/30 p-5 backdrop-blur-sm">
-          <p className="mb-3 text-xs font-black uppercase tracking-[0.14em] text-[#E498FF]">
-            Dados confirmados do ganhador
-          </p>
-          <div className="space-y-2 text-sm">
-            <InfoRow label="Nome" value={dadosAtuais.nome} />
-            <InfoRow label="CPF" value={formatCpfExibir(dadosAtuais.cpf)} />
-            {dadosAtuais.nascimento && <InfoRow label="Nascimento" value={formatDataBr(dadosAtuais.nascimento)} />}
-            {dadosAtuais.cidade && <InfoRow label="Cidade" value={dadosAtuais.cidade} />}
+        <div className="relative z-10 w-full" style={{ animation: "celebracao-card 0.6s cubic-bezier(0.22, 1, 0.36, 1) both" }}>
+          <div className="rounded-3xl border border-[#FFD700]/20 bg-gradient-to-br from-[#2D0A57]/90 to-[#1A0037]/90 p-5 shadow-[0_8px_32px_-8px_rgb(255_215_0/0.15)] backdrop-blur-sm">
+            <p className="mb-3 text-xs font-black uppercase tracking-[0.14em] text-[#FFD700]">
+              ✦ Ganhador Confirmado
+            </p>
+            <div className="space-y-2.5 text-sm">
+              <InfoRow label="Nome" value={dadosAtuais.nome} />
+              <InfoRow label="CPF" value={formatCpfExibir(dadosAtuais.cpf)} />
+              {dadosAtuais.nascimento && <InfoRow label="Nascimento" value={formatDataBr(dadosAtuais.nascimento)} />}
+              {dadosAtuais.cidade && <InfoRow label="Cidade" value={dadosAtuais.cidade} />}
+            </div>
           </div>
         </div>
       )}
 
       {etapa >= 3 && temCodigo && (
-        <div className="w-full animate-fade-up rounded-3xl border border-white/15 bg-[#1A0037]/80 p-5 text-center backdrop-blur-sm">
-          <p className="mb-3 text-xs font-black uppercase tracking-[0.14em] text-[#DFC0FF]">
-            Bilhete Premiado
-          </p>
-          <p className="font-mono text-2xl font-bold tracking-[0.2em] text-white">
-            {temCodigo}
-          </p>
+        <div className="relative z-10 w-full" style={{ animation: "celebracao-card 0.6s cubic-bezier(0.22, 1, 0.36, 1) both" }}>
+          <div className="rounded-3xl border border-[#FFD700]/15 bg-[#1A0037]/80 p-5 text-center backdrop-blur-sm">
+            <p className="mb-3 text-xs font-black uppercase tracking-[0.14em] text-[#DFC0FF]">
+              Bilhete Premiado
+            </p>
+            <p className="font-mono text-2xl font-bold tracking-[0.2em] text-white">{temCodigo}</p>
+          </div>
         </div>
       )}
 
       {etapa >= 4 && valorPremio > 0 && (
-        <div className="w-full animate-fade-up rounded-3xl border border-[#D04AFF]/40 bg-[#1A0037]/80 p-5 text-center backdrop-blur-sm">
-          <p className="mb-1 text-xs font-black uppercase tracking-[0.14em] text-[#DFC0FF]">
-            Valor do prêmio
-          </p>
-          <p className="font-mono text-4xl font-bold tracking-tight text-[#E498FF]">
-            {formatarValor(etapa >= 5 ? contadorValor : 0)}
-          </p>
+        <div className="relative z-10 w-full" style={{ animation: "celebracao-card 0.6s cubic-bezier(0.22, 1, 0.36, 1) both" }}>
+          <div className="rounded-3xl border border-[#FFD700]/30 bg-gradient-to-br from-[#1A0037]/90 to-[#2D0A57]/70 p-6 text-center shadow-[0_0_40px_-10px_rgb(255_215_0/0.2)] backdrop-blur-sm">
+            <p className="mb-2 text-xs font-black uppercase tracking-[0.14em] text-[#FFD700]">
+              Valor do prêmio
+            </p>
+            <p className="bg-gradient-to-r from-[#FFE066] via-[#FFD700] to-[#FFA500] bg-clip-text font-mono text-5xl font-black tracking-tight text-transparent">
+              {formatarValor(etapa >= 5 ? contadorValor : 0)}
+            </p>
+          </div>
         </div>
       )}
 
       {etapa >= 5 && (
-        <div className="w-full animate-fade-up">
+        <div className="relative z-10 w-full" style={{ animation: "celebracao-card 0.6s cubic-bezier(0.22, 1, 0.36, 1) both" }}>
           {liberado && temCodigo ? (
-            <div className="rounded-3xl border border-[#D04AFF]/40 bg-[#8128E8]/30 p-5 text-center backdrop-blur-sm">
-              <p className="mb-3 text-xs font-black uppercase tracking-[0.14em] text-[#E498FF]">
-                Prêmio liberado!
+            <div className="rounded-3xl border border-[#4ade80]/30 bg-gradient-to-br from-[#4ade80]/15 to-[#2D0A57]/80 p-5 text-center backdrop-blur-sm">
+              <p className="mb-3 text-xs font-black uppercase tracking-[0.14em] text-[#4ade80]">
+                ✦ Prêmio Liberado!
               </p>
-              <p className="mb-4 text-sm text-white/70">
-                Copie o código abaixo para resgatar seu prêmio.
-              </p>
+              <p className="mb-4 text-sm text-white/70">Copie o código para resgatar seu prêmio.</p>
               <div className="rounded-2xl bg-[#1A0037]/80 p-4">
                 <p className="font-mono text-lg font-bold tracking-[0.15em] text-white">{temCodigo}</p>
               </div>
               <button
                 type="button"
                 onClick={copiarCodigo}
-                className="mt-4 h-11 w-full rounded-full bg-gradient-to-r from-[#FF97E2] to-[#FF2FC4] text-sm font-black text-white shadow-[0_4px_20px_-4px_rgb(255_47_196/0.5)] transition-all duration-300 hover:shadow-[0_6px_28px_-4px_rgb(255_47_196/0.7)] active:scale-[0.97]"
+                className="mt-4 h-12 w-full rounded-full bg-gradient-to-r from-[#4ade80] to-[#22c55e] text-sm font-black text-[#052e16] shadow-[0_4px_20px_-4px_rgb(74_222_128/0.5)] transition-all duration-300 hover:shadow-[0_6px_28px_-4px_rgb(74_222_128/0.7)] active:scale-[0.97]"
               >
                 {copiado ? "COPIADO!" : "COPIAR CÓDIGO"}
               </button>
             </div>
           ) : temPix ? (
-            <div className="rounded-3xl border border-[#FFD700]/30 bg-[#FFD700]/10 p-5 text-center backdrop-blur-sm">
-              <p className="mb-2 text-lg font-black text-[#FFD700]">Aguardando liberação</p>
-              <p className="text-sm text-white/70">
+            <div className="rounded-3xl border border-[#FFD700]/25 bg-gradient-to-br from-[#FFD700]/10 to-[#1A0037]/80 p-6 text-center backdrop-blur-sm">
+              <div className="mb-3 flex justify-center">
+                <div className="flex size-10 items-center justify-center rounded-full bg-[#FFD700]/20">
+                  <span className="celebracao-estrela text-lg text-[#FFD700]">⏳</span>
+                </div>
+              </div>
+              <p className="text-lg font-black text-[#FFD700]">Aguardando liberação</p>
+              <p className="mt-2 text-sm text-white/60">
                 Sua chave Pix foi registrada. O código do prêmio será liberado em breve.
               </p>
             </div>
           ) : (
-            <div className="rounded-3xl border border-white/15 bg-[#1A0037]/80 p-5 text-center backdrop-blur-sm">
-              <p className="mb-3 text-sm text-white/70">
+            <div className="rounded-3xl border border-[#D04AFF]/30 bg-gradient-to-br from-[#2D0A57]/90 to-[#1A0037]/90 p-5 text-center backdrop-blur-sm">
+              <p className="mb-4 text-sm text-white/70">
                 Para resgatar seu prêmio, informe sua chave Pix.
               </p>
               <button
                 type="button"
                 onClick={() => setPixModal(true)}
-                className="h-11 w-full rounded-full bg-gradient-to-r from-[#FF97E2] to-[#FF2FC4] text-sm font-black text-white shadow-[0_4px_20px_-4px_rgb(255_47_196/0.5)] transition-all duration-300 hover:shadow-[0_6px_28px_-4px_rgb(255_47_196/0.7)] active:scale-[0.97]"
+                className="h-12 w-full rounded-full bg-gradient-to-r from-[#FF97E2] to-[#FF2FC4] text-sm font-black text-white shadow-[0_4px_24px_-4px_rgb(255_47_196/0.5)] transition-all duration-300 hover:shadow-[0_6px_32px_-4px_rgb(255_47_196/0.7)] active:scale-[0.97]"
               >
                 RESGATAR MEU PRÊMIO
               </button>
@@ -370,7 +430,7 @@ function Celebracao({ dados, onVoltar }: { dados: DadosGanhador; onVoltar: () =>
         <button
           type="button"
           onClick={onVoltar}
-          className="mt-2 text-sm text-white/50 transition-colors hover:text-white/80"
+          className="relative z-10 mt-2 text-sm text-white/40 transition-colors hover:text-white/70"
         >
           Consultar outro CPF
         </button>
@@ -397,11 +457,33 @@ function Celebracao({ dados, onVoltar }: { dados: DadosGanhador; onVoltar: () =>
       )}
 
       <style>{`
-        @keyframes bounce-trophy {
-          0% { transform: scale(0) rotate(-15deg); }
-          50% { transform: scale(1.3) rotate(5deg); }
-          70% { transform: scale(0.9) rotate(-3deg); }
-          100% { transform: scale(1) rotate(0deg); }
+        @keyframes celebracao-entrada {
+          0% { opacity: 0; transform: scale(0.5) translateY(30px); }
+          100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        @keyframes lingote-spin {
+          0% { opacity: 0; transform: scale(0) rotateY(180deg); }
+          60% { transform: scale(1.2) rotateY(-10deg); }
+          100% { opacity: 1; transform: scale(1) rotateY(0deg); }
+        }
+        @keyframes celebracao-card {
+          0% { opacity: 0; transform: translateY(20px) scale(0.95); }
+          100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .celebracao-estrela {
+          animation: estrela-pulse 1.5s ease-in-out infinite;
+          color: #FFD700;
+        }
+        @keyframes estrela-pulse {
+          0%, 100% { opacity: 0.4; transform: scale(0.8); }
+          50% { opacity: 1; transform: scale(1.2); }
+        }
+        .celebracao-glow {
+          animation: glow-pulse 3s ease-in-out infinite;
+        }
+        @keyframes glow-pulse {
+          0%, 100% { opacity: 0.3; transform: translate(-50%, -50%) scale(1); }
+          50% { opacity: 0.6; transform: translate(-50%, -50%) scale(1.2); }
         }
       `}</style>
     </div>
