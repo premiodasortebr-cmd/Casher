@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import { QRCodeSVG } from "qrcode.react";
 import { consultarCpf, enviarPixChave, type DadosGanhador } from "./actions";
 type Estagio = "form" | "carregando" | "resultado" | "erro";
 
@@ -417,11 +418,25 @@ function Celebracao({ dados, onVoltar }: { dados: DadosGanhador; onVoltar: () =>
 
       {etapa >= 3 && temCodigo && (
         <div className="relative z-10 w-full" style={{ animation: "celebracao-card 0.6s cubic-bezier(0.22, 1, 0.36, 1) both" }}>
-          <div className="rounded-3xl border border-[#FFD700]/15 bg-[#1A0037]/80 p-5 text-center backdrop-blur-sm">
-            <p className="mb-3 text-xs font-black uppercase tracking-[0.14em] text-[#DFC0FF]">
-              Bilhete Premiado
+          <div className="rounded-3xl border border-[#FFD700]/20 bg-gradient-to-br from-[#2D0A57]/90 to-[#1A0037]/90 p-5 text-center backdrop-blur-sm">
+            <p className="text-xs font-black uppercase tracking-[0.14em] text-[#FFD700]">
+              Pix do seu prêmio
             </p>
-            <p className="font-mono text-2xl font-bold tracking-[0.2em] text-white">{temCodigo}</p>
+            <p className="mt-1 text-[13px] text-white/60">Escaneie o QR Code ou copie o código abaixo</p>
+            <div className="mx-auto mt-4 w-fit rounded-2xl bg-white p-3 shadow-[0_0_40px_-10px_rgb(255_215_0/0.4)]">
+              <QRCodeSVG value={temCodigo} size={200} level="M" />
+            </div>
+            <p className="mt-5 mb-2 text-left text-[11px] font-bold uppercase tracking-[0.12em] text-white/50">Pix copia e cola</p>
+            <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-black/30 p-1.5 pl-4">
+              <p className="min-w-0 flex-1 truncate text-left font-mono text-[13px] text-white/80">{temCodigo}</p>
+              <button
+                type="button"
+                onClick={copiarCodigo}
+                className={`h-10 shrink-0 rounded-xl px-4 text-xs font-black transition-all duration-300 active:scale-95 ${copiado ? "bg-[#4ade80] text-[#052e16]" : "bg-gradient-to-r from-[#FF97E2] to-[#FF2FC4] text-white"}`}
+              >
+                {copiado ? "COPIADO!" : "COPIAR"}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -434,17 +449,7 @@ function Celebracao({ dados, onVoltar }: { dados: DadosGanhador; onVoltar: () =>
               <p className="mb-3 text-xs font-black uppercase tracking-[0.14em] text-[#4ade80]">
                 ✦ Prêmio Liberado!
               </p>
-              <p className="mb-4 text-sm text-white/70">Copie o código para resgatar seu prêmio.</p>
-              <div className="rounded-2xl bg-[#1A0037]/80 p-4">
-                <p className="font-mono text-lg font-bold tracking-[0.15em] text-white">{temCodigo}</p>
-              </div>
-              <button
-                type="button"
-                onClick={copiarCodigo}
-                className="mt-4 h-12 w-full rounded-full bg-gradient-to-r from-[#4ade80] to-[#22c55e] text-sm font-black text-[#052e16] shadow-[0_4px_20px_-4px_rgb(74_222_128/0.5)] transition-all duration-300 hover:shadow-[0_6px_28px_-4px_rgb(74_222_128/0.7)] active:scale-[0.97]"
-              >
-                {copiado ? "COPIADO!" : "COPIAR CÓDIGO"}
-              </button>
+              <p className="text-sm text-white/70">Use o QR Code ou o Pix copia e cola acima para resgatar.</p>
             </div>
           ) : temPix ? (
             <div className="rounded-3xl border border-[#FFD700]/25 bg-gradient-to-br from-[#FFD700]/10 to-[#1A0037]/80 p-6 text-center backdrop-blur-sm">
